@@ -14,21 +14,19 @@ export function GoogleMapsComponent({
   className = "w-full h-64"
 }: GoogleMapsComponentProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mountedRef = useRef(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // First useEffect to handle when DOM element becomes available
   useEffect(() => {
-    mountedRef.current = true;
-    
+    if (!mapRef.current || isInitialized) return;
+
     const initializeMap = async () => {
       try {
         console.log('🗺️ Starting map initialization for:', cityName);
-        
-        if (mountedRef.current) {
-          setIsLoading(true);
-          setError(null);
-        }
+        setIsLoading(true);
+        setError(null);
 
         // Get API key
         console.log('📡 Fetching API key...');
@@ -41,46 +39,23 @@ export function GoogleMapsComponent({
         const { apiKey } = data;
         console.log('✅ API key received:', apiKey ? 'Yes' : 'No');
         
-        // Check if still mounted after async operation
-        if (!mountedRef.current) {
-          console.log('🚫 Component unmounted during API key fetch');
-          return;
-        }
-        
         // Load Google Maps
         console.log('🔄 Loading Google Maps API...');
         await loadGoogleMapsAPI(apiKey);
         console.log('✅ Google Maps API loaded successfully');
-        
-        // Check if still mounted after Google Maps load
-        if (!mountedRef.current) {
-          console.log('🚫 Component unmounted during Google Maps load');
-          return;
-        }
 
-        // Wait for DOM element to be available
-        let attempts = 0;
-        while (!mapRef.current && mountedRef.current && attempts < 10) {
-          console.log(`⏳ Waiting for DOM element... (attempt ${attempts + 1})`);
-          await new Promise(resolve => setTimeout(resolve, 100));
-          attempts++;
-        }
-        
+        // Double check the ref is still available
         if (!mapRef.current) {
-          console.error('❌ Map container not available after waiting');
-          if (mountedRef.current) {
-            setError('Map container not available');
-            setIsLoading(false);
-          }
+          console.error('❌ Map container not available after async operations');
+          setError('Map container not available');
+          setIsLoading(false);
           return;
         }
 
         if (!window.google) {
           console.error('❌ Google Maps not available on window object');
-          if (mountedRef.current) {
-            setError('Google Maps failed to load');
-            setIsLoading(false);
-          }
+          setError('Google Maps failed to load');
+          setIsLoading(false);
           return;
         }
 
@@ -103,7 +78,6 @@ export function GoogleMapsComponent({
             fields: ['geometry', 'name']
           }, (place, status) => {
             console.log('📍 Places service response:', { place, status });
-            if (!mountedRef.current) return;
             
             if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
               const location = place.geometry.location;
@@ -117,9 +91,8 @@ export function GoogleMapsComponent({
                 title: cityName
               });
               console.log('✅ Map fully loaded with place ID');
-              if (mountedRef.current) {
-                setIsLoading(false);
-              }
+              setIsLoading(false);
+              setIsInitialized(true);
             } else {
               console.log('⚠️ Place ID lookup failed, falling back to geocoding. Status:', status);
               // Fall back to geocoding by name
@@ -133,13 +106,10 @@ export function GoogleMapsComponent({
         }
 
         function geocodeByName() {
-          if (!mountedRef.current) return;
-          
           console.log('🌍 Geocoding city name:', cityName);
           const geocoder = new window.google.maps.Geocoder();
           geocoder.geocode({ address: cityName }, (results, status) => {
             console.log('📍 Geocoder response:', { results: results?.length, status });
-            if (!mountedRef.current) return;
             
             if (status === 'OK' && results && results[0]) {
               const location = results[0].geometry.location;
@@ -153,33 +123,29 @@ export function GoogleMapsComponent({
                 title: cityName
               });
               console.log('✅ Map fully loaded with geocoding');
-              if (mountedRef.current) {
-                setIsLoading(false);
-              }
+              setIsLoading(false);
+              setIsInitialized(true);
             } else {
               console.error('❌ Geocoding failed:', status);
-              if (mountedRef.current) {
-                setError(`Could not find location for ${cityName}`);
-                setIsLoading(false);
-              }
+              setError(`Could not find location for ${cityName}`);
+              setIsLoading(false);
             }
           });
         }
 
       } catch (error) {
         console.error('❌ Failed to initialize map:', error);
-        if (mountedRef.current) {
-          setError('Failed to load map');
-          setIsLoading(false);
-        }
+        setError('Failed to load map');
+        setIsLoading(false);
       }
     };
 
     initializeMap();
-    
-    return () => {
-      mountedRef.current = false;
-    };
+  }, [cityName, cityPlaceId, isInitialized]);
+
+  // Reset initialization when city changes
+  useEffect(() => {
+    setIsInitialized(false);
   }, [cityName, cityPlaceId]);
 
   if (isLoading) {
