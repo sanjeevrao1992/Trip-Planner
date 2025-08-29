@@ -14,16 +14,195 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_animal: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_animal?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_animal?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recommendations: {
+        Row: {
+          category: Database["public"]["Enums"]["category_type"]
+          created_at: string
+          endorsement_count: number
+          id: string
+          place_address: string | null
+          place_id: string
+          place_name: string
+          traveller_order: number | null
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["category_type"]
+          created_at?: string
+          endorsement_count?: number
+          id?: string
+          place_address?: string | null
+          place_id: string
+          place_name: string
+          traveller_order?: number | null
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["category_type"]
+          created_at?: string
+          endorsement_count?: number
+          id?: string
+          place_address?: string | null
+          place_id?: string
+          place_name?: string
+          traveller_order?: number | null
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submissions: {
+        Row: {
+          category: Database["public"]["Enums"]["category_type"]
+          created_at: string
+          id: string
+          is_endorsement: boolean
+          recommendation_id: string
+          submitter_id: string | null
+          submitter_name: string | null
+          submitter_session_id: string | null
+          trip_id: string
+          updated_at: string
+          why_text: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["category_type"]
+          created_at?: string
+          id?: string
+          is_endorsement?: boolean
+          recommendation_id: string
+          submitter_id?: string | null
+          submitter_name?: string | null
+          submitter_session_id?: string | null
+          trip_id: string
+          updated_at?: string
+          why_text?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["category_type"]
+          created_at?: string
+          id?: string
+          is_endorsement?: boolean
+          recommendation_id?: string
+          submitter_id?: string | null
+          submitter_name?: string | null
+          submitter_session_id?: string | null
+          trip_id?: string
+          updated_at?: string
+          why_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "recommendations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          city_name: string
+          city_place_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          owner_id: string
+          share_token: string
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          city_name: string
+          city_place_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          owner_id: string
+          share_token?: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city_name?: string
+          city_place_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          owner_id?: string
+          share_token?: string
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_trip_by_share_token: {
+        Args: { token: string }
+        Returns: {
+          city_name: string
+          city_place_id: string
+          end_date: string
+          id: string
+          owner_name: string
+          start_date: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      category_type: "eat" | "visit"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +329,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      category_type: ["eat", "visit"],
+    },
   },
 } as const
