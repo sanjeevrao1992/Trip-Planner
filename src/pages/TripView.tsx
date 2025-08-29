@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,9 @@ interface Trip {
 }
 
 const TripView = () => {
-  const { tripId } = useParams<{ tripId: string }>();
+  const location = useLocation();
+  // Extract share token from the full path after /share/
+  const shareToken = location.pathname.replace('/share/', '');
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +28,8 @@ const TripView = () => {
 
   useEffect(() => {
     const fetchTrip = async () => {
-      if (!tripId) {
-        setError("Trip ID not provided");
+      if (!shareToken) {
+        setError("Invalid share link");
         setLoading(false);
         return;
       }
@@ -36,11 +38,13 @@ const TripView = () => {
         const { data: trip, error } = await supabase
           .from('trips')
           .select('*')
-          .eq('id', tripId)
-          .single();
+          .eq('share_token', shareToken)
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching trip:', error);
+          setError('Failed to load trip');
+        } else if (!trip) {
           setError('Trip not found');
         } else {
           setTrip(trip);
@@ -54,7 +58,7 @@ const TripView = () => {
     };
 
     fetchTrip();
-  }, [tripId]);
+  }, [shareToken]);
 
   if (loading) {
     return (
