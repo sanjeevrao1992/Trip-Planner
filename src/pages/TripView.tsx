@@ -14,6 +14,7 @@ interface Trip {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
+  owner_name?: string;
 }
 
 const TripView = () => {
@@ -35,19 +36,27 @@ const TripView = () => {
       }
 
       try {
-        const { data: trip, error } = await supabase
-          .from('trips')
-          .select('*')
-          .eq('share_token', shareToken)
-          .maybeSingle();
+        const { data, error } = await supabase.rpc('get_trip_by_share_token', {
+          token: shareToken
+        });
 
         if (error) {
           console.error('Error fetching trip:', error);
           setError('Failed to load trip');
-        } else if (!trip) {
+        } else if (!data || data.length === 0) {
           setError('Trip not found');
         } else {
-          setTrip(trip);
+          // The RPC returns an array, but we expect only one result
+          const tripData = data[0];
+          setTrip({
+            id: tripData.id,
+            city_name: tripData.city_name,
+            city_place_id: tripData.city_place_id,
+            start_date: tripData.start_date,
+            end_date: tripData.end_date,
+            created_at: new Date().toISOString(),
+            owner_name: tripData.owner_name
+          });
         }
       } catch (err) {
         console.error('Error:', err);
