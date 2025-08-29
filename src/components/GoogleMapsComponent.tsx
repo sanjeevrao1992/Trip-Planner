@@ -25,20 +25,6 @@ export function GoogleMapsComponent({
       try {
         console.log('🗺️ Starting map initialization for:', cityName);
         
-        // Check if component is still mounted and ref exists
-        if (!mountedRef.current) {
-          console.log('🚫 Component unmounted, aborting initialization');
-          return;
-        }
-        
-        // Wait for next tick to ensure DOM element is available
-        await new Promise(resolve => setTimeout(resolve, 0));
-        
-        if (!mountedRef.current || !mapRef.current) {
-          console.error('❌ Component unmounted or map container not available');
-          return;
-        }
-        
         if (mountedRef.current) {
           setIsLoading(true);
           setError(null);
@@ -56,7 +42,7 @@ export function GoogleMapsComponent({
         console.log('✅ API key received:', apiKey ? 'Yes' : 'No');
         
         // Check if still mounted after async operation
-        if (!mountedRef.current || !mapRef.current) {
+        if (!mountedRef.current) {
           console.log('🚫 Component unmounted during API key fetch');
           return;
         }
@@ -66,9 +52,26 @@ export function GoogleMapsComponent({
         await loadGoogleMapsAPI(apiKey);
         console.log('✅ Google Maps API loaded successfully');
         
-        // Final check before creating map
-        if (!mountedRef.current || !mapRef.current) {
+        // Check if still mounted after Google Maps load
+        if (!mountedRef.current) {
           console.log('🚫 Component unmounted during Google Maps load');
+          return;
+        }
+
+        // Wait for DOM element to be available
+        let attempts = 0;
+        while (!mapRef.current && mountedRef.current && attempts < 10) {
+          console.log(`⏳ Waiting for DOM element... (attempt ${attempts + 1})`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (!mapRef.current) {
+          console.error('❌ Map container not available after waiting');
+          if (mountedRef.current) {
+            setError('Map container not available');
+            setIsLoading(false);
+          }
           return;
         }
 
