@@ -1,11 +1,16 @@
 import { useParams, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { GoogleMapsComponent } from "@/components/GoogleMapsComponent";
 import { useAnonymousSession } from "@/hooks/useAnonymousSession";
+
+const supabaseUrl = "https://tmbdfmpnfniosocmbpqm.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtYmRmbXBuZm5pb3NvY21icHFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0NzQ5MjEsImV4cCI6MjA3MjA1MDkyMX0.iVyqFDie74wTnQCbxw60QdcMFtdzvG0uF4hxmvbyRBk";
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Trip {
   id: string;
@@ -21,6 +26,8 @@ const TripView = () => {
   const location = useLocation();
   // Extract share token from the full path after /share/
   const shareToken = location.pathname.replace('/share/', '');
+  console.log('TripView: shareToken =', shareToken);
+  console.log('TripView: location.pathname =', location.pathname);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
