@@ -12,17 +12,17 @@ const Index = () => {
   const [trips, setTrips] = useState([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
 
-  // Redirect to auth if not authenticated
-  if (!loading && !user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // Load user's trips
+  // Load user's trips - ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   useEffect(() => {
     if (user) {
       loadTrips();
     }
   }, [user]);
+
+  // Redirect to auth if not authenticated - AFTER all hooks
+  if (!loading && !user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   const loadTrips = async () => {
     try {
