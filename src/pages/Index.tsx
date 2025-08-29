@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CreateTripWizard } from '@/components/CreateTripWizard';
+import { GoogleMapsComponent } from '@/components/GoogleMapsComponent';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, LogOut } from 'lucide-react';
@@ -11,6 +12,7 @@ const Index = () => {
   const [showCreateTrip, setShowCreateTrip] = useState(false);
   const [trips, setTrips] = useState([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
+  const [selectedTrip, setSelectedTrip] = useState<any>(null);
 
   // Load user's trips - ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   useEffect(() => {
@@ -43,7 +45,15 @@ const Index = () => {
   const handleTripCreated = (tripId: string) => {
     setShowCreateTrip(false);
     loadTrips(); // Refresh the trips list
-    // TODO: Navigate to trip map view
+    // Find and select the created trip
+    const createdTrip = trips.find((trip: any) => trip.id === tripId);
+    if (createdTrip) {
+      setSelectedTrip(createdTrip);
+    }
+  };
+
+  const handleTripClick = (trip: any) => {
+    setSelectedTrip(trip);
   };
 
   const handleSignOut = async () => {
@@ -122,24 +132,42 @@ const Index = () => {
               </Button>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {trips.map((trip: any) => (
-                <div 
-                  key={trip.id} 
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                >
-                  <h3 className="font-semibold mb-2">{trip.city_name}</h3>
-                  {trip.start_date && (
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(trip.start_date).toLocaleDateString()} 
-                      {trip.end_date && ` - ${new Date(trip.end_date).toLocaleDateString()}`}
+            <div className="grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {trips.map((trip: any) => (
+                  <div 
+                    key={trip.id} 
+                    className={`border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${
+                      selectedTrip?.id === trip.id ? 'border-primary bg-primary/5' : ''
+                    }`}
+                    onClick={() => handleTripClick(trip)}
+                  >
+                    <h3 className="font-semibold mb-2">{trip.city_name}</h3>
+                    {trip.start_date && (
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(trip.start_date).toLocaleDateString()} 
+                        {trip.end_date && ` - ${new Date(trip.end_date).toLocaleDateString()}`}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Created {new Date(trip.created_at).toLocaleDateString()}
                     </p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Created {new Date(trip.created_at).toLocaleDateString()}
-                  </p>
+                  </div>
+                ))}
+              </div>
+              
+              {selectedTrip && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Map: {selectedTrip.city_name}
+                  </h3>
+                  <GoogleMapsComponent
+                    cityName={selectedTrip.city_name}
+                    cityPlaceId={selectedTrip.city_place_id}
+                    className="w-full h-96 rounded-lg"
+                  />
                 </div>
-              ))}
+              )}
             </div>
           </div>
         )}

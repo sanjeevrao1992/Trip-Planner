@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PlaceResult {
   place_id: string;
@@ -27,8 +28,55 @@ export function GooglePlacesAutocomplete({
 }: GooglePlacesAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState(value || '');
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
 
-  // Temporary placeholder - will be replaced when Google Maps API is added
+  // Get API key and load Google Maps
+  useEffect(() => {
+    const initializeGoogleMaps = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-maps-api-key');
+        if (error) throw error;
+        
+        const { apiKey: key } = data;
+        setApiKey(key);
+        
+        if (key) {
+          await loadGoogleMapsAPI(key);
+          setIsGoogleMapsLoaded(true);
+        }
+      } catch (error) {
+        console.error('Failed to load Google Maps:', error);
+      }
+    };
+
+    initializeGoogleMaps();
+  }, []);
+
+  // Initialize autocomplete when Google Maps is loaded
+  useEffect(() => {
+    if (isGoogleMapsLoaded && inputRef.current && window.google) {
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        inputRef.current,
+        { 
+          types: types,
+          fields: ['place_id', 'name', 'formatted_address']
+        }
+      );
+
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place.place_id) {
+          onPlaceSelect({
+            place_id: place.place_id,
+            name: place.name || place.formatted_address || '',
+            formatted_address: place.formatted_address || ''
+          });
+        }
+      });
+    }
+  }, [isGoogleMapsLoaded, types, onPlaceSelect]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
@@ -36,8 +84,8 @@ export function GooglePlacesAutocomplete({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && inputValue.trim()) {
-      // Temporary mock place selection for development
+    // Only use fallback if Google Maps is not loaded
+    if (!isGoogleMapsLoaded && e.key === 'Enter' && inputValue.trim()) {
       const mockPlace: PlaceResult = {
         place_id: 'mock_' + Date.now(),
         name: inputValue.trim(),
@@ -60,12 +108,14 @@ export function GooglePlacesAutocomplete({
         value={inputValue}
         onChange={handleInputChange}
         onKeyPress={handleKeyPress}
-        placeholder={placeholder + " (Press Enter to select)"}
+        placeholder={placeholder}
         className={cn(className)}
       />
-      <p className="text-xs text-muted-foreground mt-1">
-        Temporary: Type city name and press Enter. Google Places will be integrated later.
-      </p>
+      {!isGoogleMapsLoaded && (
+        <p className="text-xs text-muted-foreground mt-1">
+          Loading Google Places... or press Enter for manual entry.
+        </p>
+      )}
     </div>
   );
 }
