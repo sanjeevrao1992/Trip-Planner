@@ -13,14 +13,19 @@ export function GoogleMapsComponent({
   cityPlaceId, 
   className = "w-full h-64"
 }: GoogleMapsComponentProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
 
-  // First useEffect to handle when DOM element becomes available
+  // Use callback ref to know when DOM element is available
+  const mapRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (node !== null) {
+      setMapContainer(node);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!mapRef.current || isInitialized) return;
+    if (!mapContainer) return;
 
     const initializeMap = async () => {
       try {
@@ -44,14 +49,6 @@ export function GoogleMapsComponent({
         await loadGoogleMapsAPI(apiKey);
         console.log('✅ Google Maps API loaded successfully');
 
-        // Double check the ref is still available
-        if (!mapRef.current) {
-          console.error('❌ Map container not available after async operations');
-          setError('Map container not available');
-          setIsLoading(false);
-          return;
-        }
-
         if (!window.google) {
           console.error('❌ Google Maps not available on window object');
           setError('Google Maps failed to load');
@@ -61,7 +58,7 @@ export function GoogleMapsComponent({
 
         console.log('🗺️ Creating Google Map...');
         // Create map
-        const map = new window.google.maps.Map(mapRef.current, {
+        const map = new window.google.maps.Map(mapContainer, {
           zoom: 12,
           center: { lat: 0, lng: 0 } // Default center, will be updated
         });
@@ -92,7 +89,6 @@ export function GoogleMapsComponent({
               });
               console.log('✅ Map fully loaded with place ID');
               setIsLoading(false);
-              setIsInitialized(true);
             } else {
               console.log('⚠️ Place ID lookup failed, falling back to geocoding. Status:', status);
               // Fall back to geocoding by name
@@ -124,7 +120,6 @@ export function GoogleMapsComponent({
               });
               console.log('✅ Map fully loaded with geocoding');
               setIsLoading(false);
-              setIsInitialized(true);
             } else {
               console.error('❌ Geocoding failed:', status);
               setError(`Could not find location for ${cityName}`);
@@ -141,11 +136,12 @@ export function GoogleMapsComponent({
     };
 
     initializeMap();
-  }, [cityName, cityPlaceId, isInitialized]);
+  }, [mapContainer, cityName, cityPlaceId]);
 
-  // Reset initialization when city changes
+  // Reset when city changes
   useEffect(() => {
-    setIsInitialized(false);
+    setIsLoading(true);
+    setError(null);
   }, [cityName, cityPlaceId]);
 
   if (isLoading) {
