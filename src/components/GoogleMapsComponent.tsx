@@ -43,12 +43,14 @@ export function GoogleMapsComponent({
         // Use Places service to get city location
         const service = new window.google.maps.places.PlacesService(map);
         
-        if (cityPlaceId) {
-          // Get place by place ID
+        if (cityPlaceId && !cityPlaceId.startsWith('mock_')) {
+          // Get place by place ID (only if it's a real Google place ID)
+          console.log('Using Google Place ID:', cityPlaceId);
           service.getDetails({
             placeId: cityPlaceId,
             fields: ['geometry', 'name']
           }, (place, status) => {
+            console.log('Places service response:', { place, status });
             if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
               const location = place.geometry.location;
               map.setCenter(location);
@@ -59,13 +61,23 @@ export function GoogleMapsComponent({
                 map: map,
                 title: cityName
               });
+              setIsLoading(false);
+            } else {
+              console.log('Place ID lookup failed, falling back to geocoding');
+              // Fall back to geocoding by name
+              geocodeByName();
             }
-            setIsLoading(false);
           });
         } else {
-          // Search by city name
+          // Search by city name or handle mock place ID
+          geocodeByName();
+        }
+
+        function geocodeByName() {
+          console.log('Geocoding city name:', cityName);
           const geocoder = new window.google.maps.Geocoder();
           geocoder.geocode({ address: cityName }, (results, status) => {
+            console.log('Geocoder response:', { results, status });
             if (status === 'OK' && results && results[0]) {
               const location = results[0].geometry.location;
               map.setCenter(location);
@@ -76,10 +88,12 @@ export function GoogleMapsComponent({
                 map: map,
                 title: cityName
               });
+              setIsLoading(false);
             } else {
+              console.error('Geocoding failed:', status);
               setError(`Could not find location for ${cityName}`);
+              setIsLoading(false);
             }
-            setIsLoading(false);
           });
         }
 
