@@ -58,14 +58,16 @@ export function GoogleMapsComponent({
           return;
         }
         
-        if (!response.data || !response.data.apiKey) {
+        // Handle success or server-reported error in a 200 response
+        const apiKey = (response.data as any)?.apiKey as string | undefined;
+        const serverError = (response.data as any)?.error as string | undefined;
+        if (!apiKey) {
           console.error('❌ No API key in response:', response.data);
-          setError('No API key received from server');
+          setError(serverError ? `Failed to get API key: ${serverError}` : 'No API key received from server');
           setIsLoading(false);
           return;
         }
         
-        const { apiKey } = response.data;
         console.log('✅ API key received:', apiKey ? 'Yes' : 'No', 'Length:', apiKey?.length);
         console.log('✅ First 10 chars of API key:', apiKey?.substring(0, 10));
         

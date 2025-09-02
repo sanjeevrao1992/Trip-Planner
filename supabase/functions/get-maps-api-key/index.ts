@@ -21,7 +21,13 @@ serve(async (req) => {
 
     if (!apiKey) {
       console.error('❌ Google Maps API key not configured');
-      throw new Error('Google Maps API key not configured')
+      return new Response(
+        JSON.stringify({ error: 'Google Maps API key not configured' }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        },
+      )
     }
 
     console.log('✅ Returning API key');
@@ -35,10 +41,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Edge function error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: 200,
       },
     )
   }
