@@ -123,18 +123,30 @@ export function GooglePlacesAutocomplete({
 // Helper function to load Google Maps API
 export function loadGoogleMapsAPI(apiKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (typeof window !== 'undefined' && window.google) {
+    if (typeof window !== 'undefined' && window.google && window.google.maps) {
       resolve();
       return;
     }
 
+    // Create a unique callback name
+    const callbackName = `googleMapsCallback_${Date.now()}`;
+    
+    // Set up the callback on window
+    (window as any)[callbackName] = () => {
+      console.log('✅ Google Maps API callback fired');
+      delete (window as any)[callbackName];
+      resolve();
+    };
+
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`;
     script.async = true;
     script.defer = true;
     
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('Failed to load Google Maps API'));
+    script.onerror = () => {
+      delete (window as any)[callbackName];
+      reject(new Error('Failed to load Google Maps API'));
+    };
     
     document.head.appendChild(script);
   });
