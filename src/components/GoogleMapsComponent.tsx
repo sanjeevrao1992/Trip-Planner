@@ -169,24 +169,28 @@ export function GoogleMapsComponent({
     setError(null);
   }, [cityName, cityPlaceId]);
 
-  if (isLoading) {
-    return (
-      <div className={`${className} bg-muted rounded-lg flex items-center justify-center`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading map...</p>
+  // Always render the map container, but show loading/error overlays
+  return (
+    <div className={`relative ${className}`}>
+      <div ref={mapRef} className="w-full h-full rounded-lg" />
+      
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+            <p className="text-sm text-muted-foreground">Loading map...</p>
+          </div>
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={`${className} bg-muted rounded-lg flex items-center justify-center`}>
-        <p className="text-sm text-muted-foreground">{error}</p>
-      </div>
-    );
-  }
-
-  return <div ref={mapRef} className={className} />;
+      )}
+      
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
+          <div className="text-center">
+            <p className="text-sm text-destructive">Failed to load map</p>
+            <p className="text-xs text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
