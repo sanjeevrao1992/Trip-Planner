@@ -13,19 +13,28 @@ export function GoogleMapsComponent({
   cityPlaceId, 
   className = "w-full h-64"
 }: GoogleMapsComponentProps) {
+  console.log('🗺️ GoogleMapsComponent: Component rendered with props:', { cityName, cityPlaceId, className });
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
 
+  console.log('🗺️ GoogleMapsComponent: Current state:', { isLoading, error, mapContainer: !!mapContainer });
+
   // Use callback ref to know when DOM element is available
   const mapRef = React.useCallback((node: HTMLDivElement | null) => {
+    console.log('🗺️ GoogleMapsComponent: mapRef callback called with node:', !!node);
     if (node !== null) {
       setMapContainer(node);
     }
   }, []);
 
   useEffect(() => {
-    if (!mapContainer) return;
+    console.log('🗺️ GoogleMapsComponent: useEffect triggered, mapContainer:', !!mapContainer);
+    if (!mapContainer) {
+      console.log('🗺️ GoogleMapsComponent: No mapContainer, returning early');
+      return;
+    }
 
     const initializeMap = async () => {
       try {
