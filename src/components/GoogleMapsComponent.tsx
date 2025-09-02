@@ -34,26 +34,31 @@ export function GoogleMapsComponent({
         setError(null);
 
         // Get API key
-        console.log('📡 Fetching API key...');
-        const { data, error: apiError } = await supabase.functions.invoke('get-maps-api-key');
-        console.log('📡 Raw API response:', { data, error: apiError });
+        console.log('📡 Fetching API key from edge function...');
+        console.log('📡 Making request to supabase.functions.invoke...');
         
-        if (apiError) {
-          console.error('❌ API key fetch error:', apiError);
-          setError(`Failed to get API key: ${apiError.message}`);
+        const response = await supabase.functions.invoke('get-maps-api-key');
+        console.log('📡 Full response object:', response);
+        console.log('📡 Response data:', response.data);
+        console.log('📡 Response error:', response.error);
+        
+        if (response.error) {
+          console.error('❌ API key fetch error:', response.error);
+          setError(`Failed to get API key: ${response.error.message || JSON.stringify(response.error)}`);
           setIsLoading(false);
           return;
         }
         
-        if (!data || !data.apiKey) {
-          console.error('❌ No API key in response:', data);
+        if (!response.data || !response.data.apiKey) {
+          console.error('❌ No API key in response:', response.data);
           setError('No API key received from server');
           setIsLoading(false);
           return;
         }
         
-        const { apiKey } = data;
+        const { apiKey } = response.data;
         console.log('✅ API key received:', apiKey ? 'Yes' : 'No', 'Length:', apiKey?.length);
+        console.log('✅ First 10 chars of API key:', apiKey?.substring(0, 10));
         
         // Load Google Maps
         console.log('🔄 Loading Google Maps API...');
