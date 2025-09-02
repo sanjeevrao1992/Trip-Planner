@@ -36,13 +36,24 @@ export function GoogleMapsComponent({
         // Get API key
         console.log('📡 Fetching API key...');
         const { data, error: apiError } = await supabase.functions.invoke('get-maps-api-key');
+        console.log('📡 Raw API response:', { data, error: apiError });
+        
         if (apiError) {
           console.error('❌ API key fetch error:', apiError);
-          throw apiError;
+          setError(`Failed to get API key: ${apiError.message}`);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!data || !data.apiKey) {
+          console.error('❌ No API key in response:', data);
+          setError('No API key received from server');
+          setIsLoading(false);
+          return;
         }
         
         const { apiKey } = data;
-        console.log('✅ API key received:', apiKey ? 'Yes' : 'No');
+        console.log('✅ API key received:', apiKey ? 'Yes' : 'No', 'Length:', apiKey?.length);
         
         // Load Google Maps
         console.log('🔄 Loading Google Maps API...');

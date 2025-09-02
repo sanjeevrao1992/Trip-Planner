@@ -13,33 +13,18 @@ serve(async (req) => {
   }
 
   try {
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
-
-    // Verify user is authenticated
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser()
-
-    if (!user) {
-      throw new Error('Unauthorized')
-    }
+    console.log('🗝️ Getting Google Maps API key...');
 
     // Get the Google Maps API key from environment
     const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
+    console.log('🗝️ API key found:', apiKey ? 'Yes' : 'No');
 
     if (!apiKey) {
+      console.error('❌ Google Maps API key not configured');
       throw new Error('Google Maps API key not configured')
     }
 
+    console.log('✅ Returning API key');
     return new Response(
       JSON.stringify({ apiKey }),
       {
@@ -48,6 +33,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('❌ Edge function error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
