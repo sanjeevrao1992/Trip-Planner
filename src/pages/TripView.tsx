@@ -21,8 +21,9 @@ const TripView = () => {
   const location = useLocation();
   // Extract share token from the full path after /share/
   const shareToken = location.pathname.replace('/share/', '');
-  console.log('TripView: shareToken =', shareToken);
-  console.log('TripView: location.pathname =', location.pathname);
+  console.log('🏠 TripView: Component rendered');
+  console.log('🏠 TripView: shareToken =', shareToken);
+  console.log('🏠 TripView: location.pathname =', location.pathname);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,26 +31,32 @@ const TripView = () => {
   useAnonymousSession();
 
   useEffect(() => {
+    console.log('🏠 TripView: useEffect running, fetching trip...');
     const fetchTrip = async () => {
       if (!shareToken) {
+        console.log('🏠 TripView: No shareToken provided');
         setError("Invalid share link");
         setLoading(false);
         return;
       }
 
       try {
+        console.log('🏠 TripView: Calling RPC with token:', shareToken);
         const { data, error } = await supabase.rpc('get_trip_by_share_token', {
           token: shareToken
         });
+        console.log('🏠 TripView: RPC response:', { data, error });
 
         if (error) {
-          console.error('Error fetching trip:', error);
+          console.error('🏠 TripView: Error fetching trip:', error);
           setError('Failed to load trip');
         } else if (!data || data.length === 0) {
+          console.log('🏠 TripView: No trip data found');
           setError('Trip not found');
         } else {
           // The RPC returns an array, but we expect only one result
           const tripData = data[0];
+          console.log('🏠 TripView: Trip data found:', tripData);
           setTrip({
             id: tripData.id,
             city_name: tripData.city_name,
@@ -61,9 +68,10 @@ const TripView = () => {
           });
         }
       } catch (err) {
-        console.error('Error:', err);
+        console.error('🏠 TripView: Catch error:', err);
         setError('Failed to load trip');
       } finally {
+        console.log('🏠 TripView: Setting loading to false');
         setLoading(false);
       }
     };
