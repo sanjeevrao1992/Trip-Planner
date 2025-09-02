@@ -114,6 +114,17 @@ const TripView = () => {
     });
   };
 
+  const handleJoinTrip = () => {
+    // Redirect to auth page to sign up or login
+    window.location.href = '/auth';
+  };
+
+  // Debug log for map component
+  console.log('🗺️ About to render GoogleMapsComponent with:', {
+    cityName: trip?.city_name,
+    cityPlaceId: trip?.city_place_id
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -151,7 +162,7 @@ const TripView = () => {
                 )}
 
                 <div className="pt-4">
-                  <Button className="w-full">
+                  <Button className="w-full" onClick={handleJoinTrip}>
                     <Users className="h-4 w-4 mr-2" />
                     Join This Trip
                   </Button>
