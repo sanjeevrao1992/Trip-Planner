@@ -89,7 +89,7 @@ export function GoogleMapsComponent({
         });
         console.log('✅ Map created successfully');
 
-        // Use Places service to get city location
+        // Use Places service to get city location (fallback to new API later)
         const service = new window.google.maps.places.PlacesService(map);
         
         if (cityPlaceId && !cityPlaceId.startsWith('mock_')) {
@@ -155,7 +155,19 @@ export function GoogleMapsComponent({
 
       } catch (error) {
         console.error('❌ Failed to initialize map:', error);
-        setError('Failed to load map');
+        
+        // Check for specific API errors
+        if (error instanceof Error) {
+          if (error.message.includes('ApiNotActivatedMapError')) {
+            setError('Google Maps API is not activated. Please enable the Maps JavaScript API in your Google Cloud Console.');
+          } else if (error.message.includes('RefererNotAllowedMapError')) {
+            setError('Domain not authorized. Please add this domain to your API key restrictions.');
+          } else {
+            setError(`Map initialization failed: ${error.message}`);
+          }
+        } else {
+          setError('Failed to load map');
+        }
         setIsLoading(false);
       }
     };

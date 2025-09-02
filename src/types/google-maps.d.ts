@@ -19,6 +19,7 @@ declare global {
             INVALID_REQUEST: 'INVALID_REQUEST';
             UNKNOWN_ERROR: 'UNKNOWN_ERROR';
           };
+          Place: new (options: { id: string }) => google.maps.places.Place;
         };
         event: {
           clearInstanceListeners: (instance: any) => void;
@@ -110,6 +111,10 @@ declare namespace google {
       }
 
       type PlacesServiceStatus = 'OK' | 'ZERO_RESULTS' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'INVALID_REQUEST' | 'UNKNOWN_ERROR';
+
+      interface Place {
+        fetchFields: (options: { fields: string[] }) => Promise<{ places: PlaceResult[] }>;
+      }
     }
   }
 }
