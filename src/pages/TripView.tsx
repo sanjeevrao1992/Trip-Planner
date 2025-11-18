@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Calendar, MapPin, UtensilsCrossed, Landmark } from "lucide-react";
 import { GoogleMapsComponent } from "@/components/GoogleMapsComponent";
 import { useAnonymousSession } from "@/hooks/useAnonymousSession";
+import { ContributeSuggestionsDialog } from "@/components/ContributeSuggestionsDialog";
+import { toast } from "sonner";
 
 interface Trip {
   id: string;
@@ -15,48 +18,51 @@ interface Trip {
   end_date: string | null;
   created_at: string;
   owner_name?: string;
+  eat_contribution_limit?: number;
+  visit_contribution_limit?: number;
 }
 
 const TripView = () => {
   const location = useLocation();
-  // Extract share token from the full path after /share/
   const shareToken = location.pathname.replace('/share/', '');
-  console.log('🏠 TripView: Component rendered');
-  console.log('🏠 TripView: shareToken =', shareToken);
-  console.log('🏠 TripView: location.pathname =', location.pathname);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contributorName, setContributorName] = useState("");
+  const [hasEnteredName, setHasEnteredName] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<"eat" | "visit">("eat");
+  const [recommendations, setRecommendations] = useState<any[]>([]);
 
-  useAnonymousSession();
+  const sessionId = useAnonymousSession() || "";
 
   useEffect(() => {
-    console.log('🏠 TripView: useEffect running, fetching trip...');
     const fetchTrip = async () => {
       if (!shareToken) {
-        console.log('🏠 TripView: No shareToken provided');
         setError("Invalid share link");
         setLoading(false);
         return;
       }
 
       try {
-        console.log('🏠 TripView: Calling RPC with token:', shareToken);
         const { data, error } = await supabase.rpc('get_trip_by_share_token', {
           token: shareToken
         });
-        console.log('🏠 TripView: RPC response:', { data, error });
 
         if (error) {
-          console.error('🏠 TripView: Error fetching trip:', error);
           setError('Failed to load trip');
         } else if (!data || data.length === 0) {
-          console.log('🏠 TripView: No trip data found');
           setError('Trip not found');
         } else {
-          // The RPC returns an array, but we expect only one result
           const tripData = data[0];
-          console.log('🏠 TripView: Trip data found:', tripData);
+          
+          // Fetch full trip details including contribution limits
+          const { data: tripDetails } = await supabase
+            .from("trips")
+            .select("eat_contribution_limit, visit_contribution_limit")
+            .eq("id", tripData.id)
+            .single();
+          
           setTrip({
             id: tripData.id,
             city_name: tripData.city_name,
@@ -64,20 +70,39 @@ const TripView = () => {
             start_date: tripData.start_date,
             end_date: tripData.end_date,
             created_at: new Date().toISOString(),
-            owner_name: tripData.owner_name
+            owner_name: tripData.owner_name,
+            eat_contribution_limit: tripDetails?.eat_contribution_limit || 4,
+            visit_contribution_limit: tripDetails?.visit_contribution_limit || 4,
           });
         }
       } catch (err) {
-        console.error('🏠 TripView: Catch error:', err);
         setError('Failed to load trip');
       } finally {
-        console.log('🏠 TripView: Setting loading to false');
         setLoading(false);
       }
     };
 
     fetchTrip();
   }, [shareToken]);
+
+  useEffect(() => {
+    if (trip && hasEnteredName) {
+      fetchRecommendations();
+    }
+  }, [trip, hasEnteredName]);
+
+  const fetchRecommendations = async () => {
+    if (!trip) return;
+    
+    const { data } = await supabase
+      .from("recommendations")
+      .select("*")
+      .eq("trip_id", trip.id);
+    
+    if (data) {
+      setRecommendations(data);
+    }
+  };
 
   if (loading) {
     return (
@@ -114,16 +139,52 @@ const TripView = () => {
     });
   };
 
-  const handleJoinTrip = () => {
-    // Redirect to auth page to sign up or login
-    window.location.href = '/auth';
+  const handleEnterName = () => {
+    if (!contributorName.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    setHasEnteredName(true);
   };
 
-  // Debug log for map component
-  console.log('🗺️ About to render GoogleMapsComponent with:', {
-    cityName: trip?.city_name,
-    cityPlaceId: trip?.city_place_id
-  });
+  const handleOpenDialog = (category: "eat" | "visit") => {
+    setSelectedCategory(category);
+    setDialogOpen(true);
+  };
+
+  if (!hasEnteredName) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-8 text-center">
+              <h1 className="text-3xl font-bold mb-2">🌍 Trip to {trip.city_name}</h1>
+              <p className="text-muted-foreground">You're invited to contribute to this trip!</p>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Enter Your Name</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Your name"
+                    value={contributorName}
+                    onChange={(e) => setContributorName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleEnterName()}
+                  />
+                  <Button onClick={handleEnterName}>
+                    Enter
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -131,79 +192,57 @@ const TripView = () => {
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">🌍 Trip to {trip.city_name}</h1>
-            <p className="text-muted-foreground">You've been invited to join this amazing trip!</p>
+            <p className="text-muted-foreground">Welcome, {contributorName}!</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Trip Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-1">Destination</h3>
-                  <p className="text-muted-foreground">{trip.city_name}</p>
-                </div>
-
-                {(trip.start_date || trip.end_date) && (
-                  <div>
-                    <h3 className="font-semibold mb-1 flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Travel Dates
-                    </h3>
-                    <div className="text-muted-foreground">
-                      {trip.start_date && <p>From: {formatDate(trip.start_date)}</p>}
-                      {trip.end_date && <p>To: {formatDate(trip.end_date)}</p>}
-                    </div>
-                  </div>
-                )}
-
-                <div className="pt-4">
-                  <Button className="w-full" onClick={handleJoinTrip}>
-                    <Users className="h-4 w-4 mr-2" />
-                    Join This Trip
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Location</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <GoogleMapsComponent
-                  cityName={trip.city_name}
-                  cityPlaceId={trip.city_place_id}
-                  className="w-full h-64 rounded-b-lg"
-                />
-              </CardContent>
-            </Card>
+          <div className="mb-6 flex gap-4">
+            <Button 
+              onClick={() => handleOpenDialog("eat")}
+              className="flex-1"
+              variant="outline"
+            >
+              <UtensilsCrossed className="h-4 w-4 mr-2" />
+              Best Places to Eat
+            </Button>
+            <Button 
+              onClick={() => handleOpenDialog("visit")}
+              className="flex-1"
+              variant="outline"
+            >
+              <Landmark className="h-4 w-4 mr-2" />
+              Best Places to Visit
+            </Button>
           </div>
 
-          <Card className="mt-6">
+          <Card>
             <CardHeader>
-              <CardTitle>Ready to Start Planning?</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5" />
+                {trip.city_name}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground mb-4">
-                Create your own Trip Pals account to collaborate on this trip, add your own trips, and invite more friends!
-              </p>
-              <div className="flex gap-2">
-                <Button onClick={() => window.location.href = '/auth'}>
-                  Sign Up Free
-                </Button>
-                <Button variant="outline" onClick={() => window.location.href = '/'}>
-                  Learn More
-                </Button>
-              </div>
+            <CardContent className="p-0">
+              <GoogleMapsComponent
+                cityName={trip.city_name}
+                cityPlaceId={trip.city_place_id}
+                className="w-full h-96 rounded-b-lg"
+              />
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <ContributeSuggestionsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        category={selectedCategory}
+        limit={selectedCategory === "eat" ? trip.eat_contribution_limit || 4 : trip.visit_contribution_limit || 4}
+        tripId={trip.id}
+        cityName={trip.city_name}
+        contributorName={contributorName}
+        sessionId={sessionId}
+        onSubmitSuccess={fetchRecommendations}
+      />
     </div>
   );
 };
