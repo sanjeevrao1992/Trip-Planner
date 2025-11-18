@@ -44,6 +44,7 @@ export const ContributeSuggestionsDialog = ({
 }: ContributeSuggestionsDialogProps) => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchKey, setSearchKey] = useState(0);
 
   const handlePlaceSelect = (place: { place_id: string; name: string; formatted_address: string }) => {
     if (places.length >= limit) {
@@ -63,6 +64,9 @@ export const ContributeSuggestionsDialog = ({
       name: place.name,
       address: place.formatted_address,
     }]);
+    
+    // Reset the autocomplete input by changing the key
+    setSearchKey(prev => prev + 1);
   };
 
   const handleRemovePlace = (id: string) => {
@@ -153,6 +157,7 @@ export const ContributeSuggestionsDialog = ({
           <div>
             {places.length < limit ? (
               <GooglePlacesAutocomplete
+                key={searchKey}
                 onPlaceSelect={handlePlaceSelect}
                 placeholder={`Search for places in ${cityName}`}
               />
