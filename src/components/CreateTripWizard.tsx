@@ -229,14 +229,14 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
                       <SelectValue placeholder="Select limit" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1 contributor</SelectItem>
-                      <SelectItem value="2">2 contributors</SelectItem>
-                      <SelectItem value="3">3 contributors</SelectItem>
-                      <SelectItem value="4">4 contributors</SelectItem>
+                      <SelectItem value="1">1 place per contributor</SelectItem>
+                      <SelectItem value="2">2 places per contributor</SelectItem>
+                      <SelectItem value="3">3 places per contributor</SelectItem>
+                      <SelectItem value="4">4 places per contributor</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-muted-foreground">
-                    Maximum number of friends who can contribute to this category
+                    Maximum places each friend can suggest in this category
                   </p>
                 </div>
 
@@ -250,14 +250,14 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
                       <SelectValue placeholder="Select limit" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="1">1 contributor</SelectItem>
-                      <SelectItem value="2">2 contributors</SelectItem>
-                      <SelectItem value="3">3 contributors</SelectItem>
-                      <SelectItem value="4">4 contributors</SelectItem>
+                      <SelectItem value="1">1 place per contributor</SelectItem>
+                      <SelectItem value="2">2 places per contributor</SelectItem>
+                      <SelectItem value="3">3 places per contributor</SelectItem>
+                      <SelectItem value="4">4 places per contributor</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-muted-foreground">
-                    Maximum number of friends who can contribute to this category
+                    Maximum places each friend can suggest in this category
                   </p>
                 </div>
               </div>

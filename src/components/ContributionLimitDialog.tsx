@@ -78,7 +78,7 @@ export const ContributionLimitDialog = ({
         <DialogHeader>
           <DialogTitle>Contribution Limits</DialogTitle>
           <DialogDescription>
-            Set the maximum number of contributors per category
+            Set how many places each contributor can suggest per category
           </DialogDescription>
         </DialogHeader>
         
@@ -93,10 +93,10 @@ export const ContributionLimitDialog = ({
                 <SelectValue placeholder="Select limit" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1 contributor</SelectItem>
-                <SelectItem value="2">2 contributors</SelectItem>
-                <SelectItem value="3">3 contributors</SelectItem>
-                <SelectItem value="4">4 contributors</SelectItem>
+                <SelectItem value="1">1 place per contributor</SelectItem>
+                <SelectItem value="2">2 places per contributor</SelectItem>
+                <SelectItem value="3">3 places per contributor</SelectItem>
+                <SelectItem value="4">4 places per contributor</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -111,10 +111,10 @@ export const ContributionLimitDialog = ({
                 <SelectValue placeholder="Select limit" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1 contributor</SelectItem>
-                <SelectItem value="2">2 contributors</SelectItem>
-                <SelectItem value="3">3 contributors</SelectItem>
-                <SelectItem value="4">4 contributors</SelectItem>
+                <SelectItem value="1">1 place per contributor</SelectItem>
+                <SelectItem value="2">2 places per contributor</SelectItem>
+                <SelectItem value="3">3 places per contributor</SelectItem>
+                <SelectItem value="4">4 places per contributor</SelectItem>
               </SelectContent>
             </Select>
           </div>
