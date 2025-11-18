@@ -156,31 +156,82 @@ const TripView = () => {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-8 text-center">
-              <h1 className="text-3xl font-bold mb-2">🌍 Trip to {trip.city_name}</h1>
-              <p className="text-muted-foreground">You're invited to contribute to this trip!</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Left section - Trip details */}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-4xl font-bold mb-2">🌍 {trip.city_name}</h1>
+                <p className="text-muted-foreground mb-4">You're invited to contribute to this trip!</p>
+                
+                {(trip.start_date || trip.end_date) && (
+                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {trip.start_date && formatDate(trip.start_date)}
+                      {trip.start_date && trip.end_date && ' - '}
+                      {trip.end_date && formatDate(trip.end_date)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Enter Your Name</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Your name"
+                      value={contributorName}
+                      onChange={(e) => setContributorName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleEnterName()}
+                    />
+                    <Button onClick={handleEnterName}>
+                      Enter
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
+            {/* Right section - Map */}
             <Card>
               <CardHeader>
-                <CardTitle>Enter Your Name</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  {trip.city_name}
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Your name"
-                    value={contributorName}
-                    onChange={(e) => setContributorName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleEnterName()}
-                  />
-                  <Button onClick={handleEnterName}>
-                    Enter
-                  </Button>
-                </div>
+              <CardContent className="p-0">
+                <GoogleMapsComponent
+                  cityName={trip.city_name}
+                  cityPlaceId={trip.city_place_id}
+                  className="w-full h-96 rounded-b-lg"
+                />
               </CardContent>
             </Card>
           </div>
+
+          {/* Bottom section - Create account CTA */}
+          <Card className="max-w-2xl mx-auto">
+            <CardContent className="p-6">
+              <div className="text-center space-y-4">
+                <h3 className="text-xl font-semibold">Want to create your own trip?</h3>
+                <p className="text-muted-foreground">
+                  Create a free account to organize your own trips and collect suggestions from friends.
+                </p>
+                <div className="flex gap-4 justify-center">
+                  <Button onClick={() => window.location.href = '/auth'}>
+                    Create Account
+                  </Button>
+                  <Button variant="outline" onClick={() => window.open('https://docs.lovable.dev', '_blank')}>
+                    Learn More
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -195,23 +246,26 @@ const TripView = () => {
             <p className="text-muted-foreground">Welcome, {contributorName}!</p>
           </div>
 
-          <div className="mb-6 flex gap-4">
-            <Button 
-              onClick={() => handleOpenDialog("eat")}
-              className="flex-1"
-              variant="outline"
-            >
-              <UtensilsCrossed className="h-4 w-4 mr-2" />
-              Best Places to Eat
-            </Button>
-            <Button 
-              onClick={() => handleOpenDialog("visit")}
-              className="flex-1"
-              variant="outline"
-            >
-              <Landmark className="h-4 w-4 mr-2" />
-              Best Places to Visit
-            </Button>
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-3">Provide suggestions for:</h2>
+            <div className="flex gap-4">
+              <Button 
+                onClick={() => handleOpenDialog("eat")}
+                className="flex-1"
+                variant="outline"
+              >
+                <UtensilsCrossed className="h-4 w-4 mr-2" />
+                Best Places to Eat
+              </Button>
+              <Button 
+                onClick={() => handleOpenDialog("visit")}
+                className="flex-1"
+                variant="outline"
+              >
+                <Landmark className="h-4 w-4 mr-2" />
+                Best Places to Visit
+              </Button>
+            </div>
           </div>
 
           <Card>
