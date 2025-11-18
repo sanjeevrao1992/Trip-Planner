@@ -56,115 +56,50 @@ export function GooglePlacesAutocomplete({
   // Initialize autocomplete when Google Maps is loaded
   useEffect(() => {
     if (isGoogleMapsLoaded && inputRef.current && window.google) {
-      const container = inputRef.current.parentElement;
-      if (!container) return;
-
-      // Check if the new PlaceAutocompleteElement is available
-      const PlaceAutocompleteElement = (window.google.maps.places as any).PlaceAutocompleteElement;
+      console.log('🔧 Initializing Google Places Autocomplete (legacy API)');
       
-      if (PlaceAutocompleteElement) {
-        console.log('✅ Using new PlaceAutocompleteElement');
-        
-        try {
-          // Create the new PlaceAutocompleteElement
-          const autocompleteElement = new PlaceAutocompleteElement({
-            componentRestrictions: types.includes('(cities)') ? { country: [] } : undefined,
-          }) as HTMLElement;
-
-          // Style the autocomplete element to match our input
-          autocompleteElement.style.width = '100%';
-          
-          // Hide the original input and show the autocomplete element
-          inputRef.current.style.display = 'none';
-          container.insertBefore(autocompleteElement, inputRef.current);
-
-          // Listen for place selection - using 'gmp-placeselect' event
-          autocompleteElement.addEventListener('gmp-placeselect', async (event: any) => {
-            console.log('🎯 Place selected (new API), full event:', event);
-            console.log('🎯 Event.place:', event.place);
-            console.log('🎯 Event.detail:', event.detail);
-            
-            // The place can be in event.place or we need to get it from placePrediction
-            let place = event.place;
-            
-            // If place is not directly available, try to get it from the prediction
-            if (!place && event.detail?.placePrediction) {
-              console.log('📍 Getting place from placePrediction...');
-              place = event.detail.placePrediction.toPlace();
-            }
-            
-            if (place) {
-              try {
-                console.log('📍 Fetching place fields...');
-                // Fetch the fields we need
-                await place.fetchFields({
-                  fields: ['id', 'displayName', 'formattedAddress']
-                });
-
-                console.log('✅ Place details:', { 
-                  id: place.id, 
-                  displayName: place.displayName, 
-                  formattedAddress: place.formattedAddress 
-                });
-
-                onPlaceSelect({
-                  place_id: place.id || '',
-                  name: place.displayName || place.formattedAddress || '',
-                  formatted_address: place.formattedAddress || ''
-                });
-                
-                // Update the hidden input value
-                if (inputRef.current) {
-                  inputRef.current.value = place.displayName || place.formattedAddress || '';
-                }
-              } catch (error) {
-                console.error('❌ Error fetching place fields:', error);
-              }
-            } else {
-              console.error('❌ No place found in event');
-            }
-          });
-
-          // Cleanup function
-          return () => {
-            if (autocompleteElement && autocompleteElement.parentElement) {
-              autocompleteElement.parentElement.removeChild(autocompleteElement);
-            }
-            if (inputRef.current) {
-              inputRef.current.style.display = '';
-            }
-          };
-        } catch (error) {
-          console.error('❌ Error creating PlaceAutocompleteElement:', error);
+      const autocomplete = new window.google.maps.places.Autocomplete(
+        inputRef.current,
+        { 
+          types: types,
+          fields: ['place_id', 'name', 'formatted_address']
         }
-      } else {
-        // Fallback to legacy Autocomplete API
-        console.log('⚠️ PlaceAutocompleteElement not available, using legacy Autocomplete');
-        
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          inputRef.current,
-          { 
-            types: types,
-            fields: ['place_id', 'name', 'formatted_address']
-          }
-        );
+      );
 
-        autocomplete.addListener('place_changed', () => {
-          console.log('🎯 Place selected (legacy API)');
-          const place = autocomplete.getPlace();
-          console.log('📍 Place details:', place);
+      autocomplete.addListener('place_changed', () => {
+        console.log('🎯 Place selection event fired');
+        const place = autocomplete.getPlace();
+        console.log('📍 Place details:', place);
+        
+        if (place.place_id) {
+          console.log('✅ Calling onPlaceSelect with:', {
+            place_id: place.place_id,
+            name: place.name || place.formatted_address || '',
+            formatted_address: place.formatted_address || ''
+          });
           
-          if (place.place_id) {
-            onPlaceSelect({
-              place_id: place.place_id,
-              name: place.name || place.formatted_address || '',
-              formatted_address: place.formatted_address || ''
-            });
-          }
-        });
-      }
+          onPlaceSelect({
+            place_id: place.place_id,
+            name: place.name || place.formatted_address || '',
+            formatted_address: place.formatted_address || ''
+          });
+        } else {
+          console.error('❌ No place_id in selected place');
+        }
+      });
+
+      return () => {
+        console.log('🧹 Cleaning up autocomplete');
+        window.google.maps.event.clearInstanceListeners(autocomplete);
+      };
     }
   }, [isGoogleMapsLoaded, types, onPlaceSelect]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    onChange?.(newValue);
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Only use fallback if Google Maps is not loaded
@@ -186,27 +121,18 @@ export function GooglePlacesAutocomplete({
 
   return (
     <div className="w-full">
-      {!isGoogleMapsLoaded && (
-        <Input
-          ref={inputRef}
-          value={inputValue}
-          onKeyPress={handleKeyPress}
-          placeholder={placeholder}
-          className={cn(className)}
-        />
-      )}
+      <Input
+        ref={inputRef}
+        value={inputValue}
+        onChange={handleInputChange}
+        onKeyPress={handleKeyPress}
+        placeholder={placeholder}
+        className={cn(className)}
+      />
       {!isGoogleMapsLoaded && (
         <p className="text-xs text-muted-foreground mt-1">
           Loading Google Places... or press Enter for manual entry.
         </p>
-      )}
-      {isGoogleMapsLoaded && (
-        <input
-          ref={inputRef}
-          type="text"
-          placeholder={placeholder}
-          className={cn("hidden", className)}
-        />
       )}
     </div>
   );
