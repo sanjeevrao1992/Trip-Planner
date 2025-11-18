@@ -10,6 +10,7 @@ declare global {
             input: HTMLInputElement,
             options?: google.maps.places.AutocompleteOptions
           ) => google.maps.places.Autocomplete;
+          PlaceAutocompleteElement: new (options?: google.maps.places.PlaceAutocompleteElementOptions) => google.maps.places.PlaceAutocompleteElement;
           PlacesService: new (map: google.maps.Map) => google.maps.places.PlacesService;
           PlacesServiceStatus: {
             OK: 'OK';
@@ -113,7 +114,25 @@ declare namespace google {
       type PlacesServiceStatus = 'OK' | 'ZERO_RESULTS' | 'OVER_QUERY_LIMIT' | 'REQUEST_DENIED' | 'INVALID_REQUEST' | 'UNKNOWN_ERROR';
 
       interface Place {
-        fetchFields: (options: { fields: string[] }) => Promise<{ places: PlaceResult[] }>;
+        id: string;
+        displayName?: string;
+        formattedAddress?: string;
+        location?: LatLng;
+        fetchFields: (options: { fields: string[] }) => Promise<void>;
+      }
+
+      interface PlaceAutocompleteElementOptions {
+        componentRestrictions?: {
+          country?: string[];
+        };
+      }
+
+      interface PlaceAutocompleteElement extends HTMLElement {
+        addEventListener(event: 'gmp-placeselect', handler: (event: PlaceSelectEvent) => void): void;
+      }
+
+      interface PlaceSelectEvent {
+        place: Place;
       }
     }
   }

@@ -53,35 +53,65 @@ export function GooglePlacesAutocomplete({
     initializeGoogleMaps();
   }, []);
 
-  // Initialize autocomplete when Google Maps is loaded
+  // Initialize autocomplete when Google Maps is loaded using new Places API
   useEffect(() => {
     if (isGoogleMapsLoaded && inputRef.current && window.google) {
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        inputRef.current,
-        { 
-          types: types,
-          fields: ['place_id', 'name', 'formatted_address']
-        }
-      );
+      const container = inputRef.current.parentElement;
+      if (!container) return;
 
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.place_id) {
-          onPlaceSelect({
-            place_id: place.place_id,
-            name: place.name || place.formatted_address || '',
-            formatted_address: place.formatted_address || ''
+      // Check if the new PlaceAutocompleteElement is available
+      const PlaceAutocompleteElement = (window.google.maps.places as any).PlaceAutocompleteElement;
+      if (!PlaceAutocompleteElement) {
+        console.error('PlaceAutocompleteElement not available');
+        return;
+      }
+
+      // Create the new PlaceAutocompleteElement
+      const autocompleteElement = new PlaceAutocompleteElement({
+        componentRestrictions: types.includes('(cities)') ? { country: [] } : undefined,
+      }) as HTMLElement;
+
+      // Style the autocomplete element to match our input
+      autocompleteElement.style.width = '100%';
+      
+      // Hide the original input and show the autocomplete element
+      inputRef.current.style.display = 'none';
+      container.insertBefore(autocompleteElement, inputRef.current);
+
+      // Listen for place selection
+      autocompleteElement.addEventListener('gmp-placeselect', async (event: any) => {
+        const place = event.place;
+        
+        if (place) {
+          // Fetch the fields we need
+          await place.fetchFields({
+            fields: ['id', 'displayName', 'formattedAddress']
           });
+
+          onPlaceSelect({
+            place_id: place.id || '',
+            name: place.displayName || place.formattedAddress || '',
+            formatted_address: place.formattedAddress || ''
+          });
+          
+          // Update the hidden input value
+          if (inputRef.current) {
+            inputRef.current.value = place.displayName || place.formattedAddress || '';
+          }
         }
       });
+
+      // Cleanup function
+      return () => {
+        if (autocompleteElement && autocompleteElement.parentElement) {
+          autocompleteElement.parentElement.removeChild(autocompleteElement);
+        }
+        if (inputRef.current) {
+          inputRef.current.style.display = '';
+        }
+      };
     }
   }, [isGoogleMapsLoaded, types, onPlaceSelect]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    onChange?.(newValue);
-  };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Only use fallback if Google Maps is not loaded
@@ -102,19 +132,28 @@ export function GooglePlacesAutocomplete({
   }, [value]);
 
   return (
-    <div>
-      <Input
-        ref={inputRef}
-        value={inputValue}
-        onChange={handleInputChange}
-        onKeyPress={handleKeyPress}
-        placeholder={placeholder}
-        className={cn(className)}
-      />
+    <div className="w-full">
+      {!isGoogleMapsLoaded && (
+        <Input
+          ref={inputRef}
+          value={inputValue}
+          onKeyPress={handleKeyPress}
+          placeholder={placeholder}
+          className={cn(className)}
+        />
+      )}
       {!isGoogleMapsLoaded && (
         <p className="text-xs text-muted-foreground mt-1">
           Loading Google Places... or press Enter for manual entry.
         </p>
+      )}
+      {isGoogleMapsLoaded && (
+        <input
+          ref={inputRef}
+          type="text"
+          placeholder={placeholder}
+          className={cn("hidden", className)}
+        />
       )}
     </div>
   );
