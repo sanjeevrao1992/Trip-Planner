@@ -5,6 +5,7 @@ declare global {
         Map: new (element: HTMLElement, options?: google.maps.MapOptions) => google.maps.Map;
         Marker: new (options?: google.maps.MarkerOptions) => google.maps.Marker;
         Geocoder: new () => google.maps.Geocoder;
+        InfoWindow: new () => google.maps.InfoWindow;
         places: {
           Autocomplete: new (
             input: HTMLInputElement,
@@ -40,6 +41,13 @@ declare namespace google {
     interface Marker {
       setMap(map: Map | null): void;
       setPosition(latlng: LatLng | LatLngLiteral): void;
+      addListener(event: string, handler: () => void): void;
+    }
+
+    interface InfoWindow {
+      setContent(content: string): void;
+      open(map: Map, marker?: Marker): void;
+      close(): void;
     }
 
     interface Geocoder {
@@ -56,6 +64,7 @@ declare namespace google {
       position?: LatLng | LatLngLiteral;
       map?: Map;
       title?: string;
+      icon?: string | { url: string };
     }
 
     interface LatLng {
@@ -104,6 +113,10 @@ declare namespace google {
         geometry?: {
           location?: LatLng;
         };
+        rating?: number;
+        photos?: Array<{
+          getUrl(options: { maxWidth?: number; maxHeight?: number }): string;
+        }>;
       }
 
       interface PlaceDetailsRequest {

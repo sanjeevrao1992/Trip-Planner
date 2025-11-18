@@ -58,7 +58,7 @@ export const ContributeSuggestionsDialog = ({
       return;
     }
 
-    setPlaces([...places, {
+    setPlaces(prev => [...prev, {
       id: crypto.randomUUID(),
       place_id: place.place_id,
       name: place.name,
@@ -67,6 +67,15 @@ export const ContributeSuggestionsDialog = ({
     
     // Reset the autocomplete input by changing the key
     setSearchKey(prev => prev + 1);
+    
+    // Prevent event propagation to keep dialog open
+    setTimeout(() => {
+      const input = document.querySelector('input[placeholder*="Search for places"]') as HTMLInputElement;
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }, 0);
   };
 
   const handleRemovePlace = (id: string) => {
