@@ -3,6 +3,10 @@ import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CreateTripWizard } from '@/components/CreateTripWizard';
 import { GoogleMapsComponent } from '@/components/GoogleMapsComponent';
+import { TripMenu } from '@/components/TripMenu';
+import { InviteFriendsDialog } from '@/components/InviteFriendsDialog';
+import { ShareLinkDialog } from '@/components/ShareLinkDialog';
+import { TripRecommendations } from '@/components/TripRecommendations';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, LogOut } from 'lucide-react';
@@ -13,6 +17,9 @@ const Index = () => {
   const [trips, setTrips] = useState([]);
   const [loadingTrips, setLoadingTrips] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [activeTrip, setActiveTrip] = useState<any>(null);
 
   // Load user's trips - ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   useEffect(() => {
@@ -142,7 +149,19 @@ const Index = () => {
                     }`}
                     onClick={() => handleTripClick(trip)}
                   >
-                    <h3 className="font-semibold mb-2">{trip.city_name}</h3>
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold">{trip.city_name}</h3>
+                      <TripMenu
+                        onInviteFriends={() => {
+                          setActiveTrip(trip);
+                          setInviteDialogOpen(true);
+                        }}
+                        onShareLink={() => {
+                          setActiveTrip(trip);
+                          setShareDialogOpen(true);
+                        }}
+                      />
+                    </div>
                     {trip.start_date && (
                       <p className="text-sm text-muted-foreground">
                         {new Date(trip.start_date).toLocaleDateString()} 
@@ -157,21 +176,48 @@ const Index = () => {
               </div>
               
               {selectedTrip && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold mb-4">
-                    Map: {selectedTrip.city_name}
-                  </h3>
-                  <GoogleMapsComponent
-                    cityName={selectedTrip.city_name}
-                    cityPlaceId={selectedTrip.city_place_id}
-                    className="w-full h-96 rounded-lg"
-                  />
+                <div className="mt-6 space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">
+                      Map: {selectedTrip.city_name}
+                    </h3>
+                    <GoogleMapsComponent
+                      cityName={selectedTrip.city_name}
+                      cityPlaceId={selectedTrip.city_place_id}
+                      className="w-full h-96 rounded-lg"
+                    />
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">
+                      Friend Suggestions
+                    </h3>
+                    <TripRecommendations tripId={selectedTrip.id} />
+                  </div>
                 </div>
               )}
             </div>
           </div>
         )}
       </main>
+
+      {activeTrip && (
+        <>
+          <InviteFriendsDialog
+            open={inviteDialogOpen}
+            onOpenChange={setInviteDialogOpen}
+            tripId={activeTrip.id}
+            cityName={activeTrip.city_name}
+            shareToken={activeTrip.share_token}
+          />
+          <ShareLinkDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            shareToken={activeTrip.share_token}
+            cityName={activeTrip.city_name}
+          />
+        </>
+      )}
     </div>
   );
 };
