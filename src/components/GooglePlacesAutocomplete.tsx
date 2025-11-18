@@ -53,7 +53,7 @@ export function GooglePlacesAutocomplete({
     initializeGoogleMaps();
   }, []);
 
-  // Initialize autocomplete when Google Maps is loaded using new Places API
+  // Initialize autocomplete when Google Maps is loaded
   useEffect(() => {
     if (isGoogleMapsLoaded && inputRef.current && window.google) {
       const container = inputRef.current.parentElement;
@@ -61,55 +61,91 @@ export function GooglePlacesAutocomplete({
 
       // Check if the new PlaceAutocompleteElement is available
       const PlaceAutocompleteElement = (window.google.maps.places as any).PlaceAutocompleteElement;
-      if (!PlaceAutocompleteElement) {
-        console.error('PlaceAutocompleteElement not available');
-        return;
-      }
-
-      // Create the new PlaceAutocompleteElement
-      const autocompleteElement = new PlaceAutocompleteElement({
-        componentRestrictions: types.includes('(cities)') ? { country: [] } : undefined,
-      }) as HTMLElement;
-
-      // Style the autocomplete element to match our input
-      autocompleteElement.style.width = '100%';
       
-      // Hide the original input and show the autocomplete element
-      inputRef.current.style.display = 'none';
-      container.insertBefore(autocompleteElement, inputRef.current);
-
-      // Listen for place selection
-      autocompleteElement.addEventListener('gmp-placeselect', async (event: any) => {
-        const place = event.place;
+      if (PlaceAutocompleteElement) {
+        console.log('✅ Using new PlaceAutocompleteElement');
         
-        if (place) {
-          // Fetch the fields we need
-          await place.fetchFields({
-            fields: ['id', 'displayName', 'formattedAddress']
-          });
+        try {
+          // Create the new PlaceAutocompleteElement
+          const autocompleteElement = new PlaceAutocompleteElement({
+            componentRestrictions: types.includes('(cities)') ? { country: [] } : undefined,
+          }) as HTMLElement;
 
-          onPlaceSelect({
-            place_id: place.id || '',
-            name: place.displayName || place.formattedAddress || '',
-            formatted_address: place.formattedAddress || ''
-          });
+          // Style the autocomplete element to match our input
+          autocompleteElement.style.width = '100%';
           
-          // Update the hidden input value
-          if (inputRef.current) {
-            inputRef.current.value = place.displayName || place.formattedAddress || '';
-          }
-        }
-      });
+          // Hide the original input and show the autocomplete element
+          inputRef.current.style.display = 'none';
+          container.insertBefore(autocompleteElement, inputRef.current);
 
-      // Cleanup function
-      return () => {
-        if (autocompleteElement && autocompleteElement.parentElement) {
-          autocompleteElement.parentElement.removeChild(autocompleteElement);
+          // Listen for place selection
+          autocompleteElement.addEventListener('gmp-placeselect', async (event: any) => {
+            console.log('🎯 Place selected (new API):', event);
+            const place = event.place;
+            
+            if (place) {
+              try {
+                // Fetch the fields we need
+                await place.fetchFields({
+                  fields: ['id', 'displayName', 'formattedAddress']
+                });
+
+                console.log('📍 Place details:', { id: place.id, displayName: place.displayName, formattedAddress: place.formattedAddress });
+
+                onPlaceSelect({
+                  place_id: place.id || '',
+                  name: place.displayName || place.formattedAddress || '',
+                  formatted_address: place.formattedAddress || ''
+                });
+                
+                // Update the hidden input value
+                if (inputRef.current) {
+                  inputRef.current.value = place.displayName || place.formattedAddress || '';
+                }
+              } catch (error) {
+                console.error('❌ Error fetching place fields:', error);
+              }
+            }
+          });
+
+          // Cleanup function
+          return () => {
+            if (autocompleteElement && autocompleteElement.parentElement) {
+              autocompleteElement.parentElement.removeChild(autocompleteElement);
+            }
+            if (inputRef.current) {
+              inputRef.current.style.display = '';
+            }
+          };
+        } catch (error) {
+          console.error('❌ Error creating PlaceAutocompleteElement:', error);
         }
-        if (inputRef.current) {
-          inputRef.current.style.display = '';
-        }
-      };
+      } else {
+        // Fallback to legacy Autocomplete API
+        console.log('⚠️ PlaceAutocompleteElement not available, using legacy Autocomplete');
+        
+        const autocomplete = new window.google.maps.places.Autocomplete(
+          inputRef.current,
+          { 
+            types: types,
+            fields: ['place_id', 'name', 'formatted_address']
+          }
+        );
+
+        autocomplete.addListener('place_changed', () => {
+          console.log('🎯 Place selected (legacy API)');
+          const place = autocomplete.getPlace();
+          console.log('📍 Place details:', place);
+          
+          if (place.place_id) {
+            onPlaceSelect({
+              place_id: place.place_id,
+              name: place.name || place.formatted_address || '',
+              formatted_address: place.formatted_address || ''
+            });
+          }
+        });
+      }
     }
   }, [isGoogleMapsLoaded, types, onPlaceSelect]);
 
