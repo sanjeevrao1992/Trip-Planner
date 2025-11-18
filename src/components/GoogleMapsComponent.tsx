@@ -2,16 +2,26 @@ import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { loadGoogleMapsAPI } from './GooglePlacesAutocomplete';
 
+interface Recommendation {
+  id: string;
+  place_id: string;
+  place_name: string;
+  place_address?: string | null;
+  category: 'eat' | 'visit';
+}
+
 interface GoogleMapsComponentProps {
   cityName: string;
   cityPlaceId?: string;
   className?: string;
+  recommendations?: Recommendation[];
 }
 
 export function GoogleMapsComponent({ 
   cityName, 
   cityPlaceId, 
-  className = "w-full h-64"
+  className = "w-full h-64",
+  recommendations = []
 }: GoogleMapsComponentProps) {
   console.log('🗺️ GoogleMapsComponent: Component rendered with props:', { cityName, cityPlaceId, className });
   
@@ -91,6 +101,9 @@ export function GoogleMapsComponent({
         });
         console.log('✅ Map created successfully');
 
+        // Store map reference for adding recommendation markers
+        let mapInstance = map;
+
         // Use Places service to get city location (fallback to new API later)
         const service = new window.google.maps.places.PlacesService(map);
         
@@ -108,12 +121,16 @@ export function GoogleMapsComponent({
               console.log('✅ Place found, setting center:', { lat: location.lat(), lng: location.lng() });
               map.setCenter(location);
               
-              // Add marker
+              // Add city marker
               new window.google.maps.Marker({
                 position: location,
                 map: map,
                 title: cityName
               });
+              
+              // Add recommendation markers
+              addRecommendationMarkers(map);
+              
               console.log('✅ Map fully loaded with place ID');
               setIsLoading(false);
             } else {
@@ -128,6 +145,48 @@ export function GoogleMapsComponent({
           geocodeByName();
         }
 
+        function addRecommendationMarkers(map: any) {
+          if (!recommendations || recommendations.length === 0) return;
+          
+          const service = new window.google.maps.places.PlacesService(map as any);
+          const infoWindow = new window.google.maps.InfoWindow();
+          
+          recommendations.forEach((rec) => {
+            service.getDetails({
+              placeId: rec.place_id,
+              fields: ['geometry', 'name', 'formatted_address', 'rating', 'photos']
+            }, (place, status) => {
+              if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+                const marker = new window.google.maps.Marker({
+                  position: place.geometry.location,
+                  map: map as any,
+                  title: rec.place_name,
+                  icon: {
+                    url: rec.category === 'eat' 
+                      ? 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                      : 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                  }
+                });
+                
+                marker.addListener('click', () => {
+                  const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 200, maxHeight: 200 });
+                  const content = `
+                    <div style="max-width: 250px;">
+                      ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+                      <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">${rec.place_name}</h3>
+                      <p style="margin: 0 0 4px 0; color: #666; font-size: 13px;">${place.formatted_address || rec.place_address || ''}</p>
+                      ${place.rating ? `<p style="margin: 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
+                      <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">${rec.category === 'eat' ? '🍽️ Place to Eat' : '🏛️ Place to Visit'}</p>
+                    </div>
+                  `;
+                  infoWindow.setContent(content);
+                  infoWindow.open(map as any, marker);
+                });
+              }
+            });
+          });
+        }
+
         function geocodeByName() {
           console.log('🌍 Geocoding city name:', cityName);
           const geocoder = new window.google.maps.Geocoder();
@@ -139,12 +198,16 @@ export function GoogleMapsComponent({
               console.log('✅ Location found:', { lat: location.lat(), lng: location.lng() });
               map.setCenter(location);
               
-              // Add marker
+              // Add city marker
               new window.google.maps.Marker({
                 position: location,
                 map: map,
                 title: cityName
               });
+              
+              // Add recommendation markers
+              addRecommendationMarkers(map);
+              
               console.log('✅ Map fully loaded with geocoding');
               setIsLoading(false);
             } else {
@@ -175,7 +238,7 @@ export function GoogleMapsComponent({
     };
 
     initializeMap();
-  }, [mapContainer, cityName, cityPlaceId]);
+  }, [mapContainer, cityName, cityPlaceId, recommendations]);
 
   // Reset when city changes
   useEffect(() => {

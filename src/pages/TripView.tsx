@@ -156,15 +156,27 @@ const TripView = () => {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
+          {/* Top section - Trip title */}
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold mb-2">🌍 {trip.city_name}</h1>
+            <p className="text-muted-foreground">You're invited to contribute to this trip!</p>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* Left section - Trip details */}
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-4xl font-bold mb-2">🌍 {trip.city_name}</h1>
-                <p className="text-muted-foreground mb-4">You're invited to contribute to this trip!</p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Trip Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">
+                  {trip.owner_name || "The trip creator"} would like to gather up to{" "}
+                  <span className="font-semibold">{trip.eat_contribution_limit || 4}</span> best places to eat and{" "}
+                  <span className="font-semibold">{trip.visit_contribution_limit || 4}</span> best places to visit from you.
+                </p>
                 
                 {(trip.start_date || trip.end_date) && (
-                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                  <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4" />
                     <span>
                       {trip.start_date && formatDate(trip.start_date)}
@@ -173,27 +185,21 @@ const TripView = () => {
                     </span>
                   </div>
                 )}
-              </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Enter Your Name</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Your name"
-                      value={contributorName}
-                      onChange={(e) => setContributorName(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleEnterName()}
-                    />
-                    <Button onClick={handleEnterName}>
-                      Enter
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                <div className="pt-4">
+                  <Input
+                    placeholder="Your name"
+                    value={contributorName}
+                    onChange={(e) => setContributorName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleEnterName()}
+                    className="mb-2"
+                  />
+                  <Button onClick={handleEnterName} className="w-full">
+                    Provide suggestions
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Right section - Map */}
             <Card>
@@ -279,6 +285,7 @@ const TripView = () => {
               <GoogleMapsComponent
                 cityName={trip.city_name}
                 cityPlaceId={trip.city_place_id}
+                recommendations={recommendations}
                 className="w-full h-96 rounded-b-lg"
               />
             </CardContent>
