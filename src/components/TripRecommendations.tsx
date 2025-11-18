@@ -90,7 +90,7 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
               Best places to eat
             </div>
             <span className="text-sm text-muted-foreground font-normal">
-              Limit: {eatLimit} contributor{eatLimit !== 1 ? 's' : ''}
+              Limit: {eatLimit} per contributor
             </span>
           </CardTitle>
         </CardHeader>
@@ -129,7 +129,7 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
               Best places to visit
             </div>
             <span className="text-sm text-muted-foreground font-normal">
-              Limit: {visitLimit} contributor{visitLimit !== 1 ? 's' : ''}
+              Limit: {visitLimit} per contributor
             </span>
           </CardTitle>
         </CardHeader>
