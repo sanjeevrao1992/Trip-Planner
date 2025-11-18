@@ -1,4 +1,4 @@
-import { MoreVertical, Mail, Share2 } from 'lucide-react';
+import { MoreVertical, Mail, Share2, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +10,10 @@ import { Button } from '@/components/ui/button';
 interface TripMenuProps {
   onInviteFriends: () => void;
   onShareLink: () => void;
+  onModifyLimits: () => void;
 }
 
-export const TripMenu = ({ onInviteFriends, onShareLink }: TripMenuProps) => {
+export const TripMenu = ({ onInviteFriends, onShareLink, onModifyLimits }: TripMenuProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
@@ -34,6 +35,13 @@ export const TripMenu = ({ onInviteFriends, onShareLink }: TripMenuProps) => {
         }}>
           <Share2 className="h-4 w-4 mr-2" />
           Share link
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={(e) => {
+          e.stopPropagation();
+          onModifyLimits();
+        }}>
+          <Settings className="h-4 w-4 mr-2" />
+          Modify contribution limits
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

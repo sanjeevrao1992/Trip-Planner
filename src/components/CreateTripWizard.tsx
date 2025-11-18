@@ -9,7 +9,8 @@ import { GooglePlacesAutocomplete } from '@/components/GooglePlacesAutocomplete'
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { CalendarIcon, Copy, QrCode, Share2 } from 'lucide-react';
+import { CalendarIcon, Copy, QrCode, Share2, UtensilsCrossed, MapPin } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +33,8 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
   const [selectedCity, setSelectedCity] = useState<PlaceResult | null>(null);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [eatLimit, setEatLimit] = useState('4');
+  const [visitLimit, setVisitLimit] = useState('4');
   const [inviteEmails, setInviteEmails] = useState('');
   const [createdTrip, setCreatedTrip] = useState<{id: string, shareUrl: string} | null>(null);
 
@@ -64,6 +67,8 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
           city_place_id: selectedCity.place_id,
           start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
           end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
+          eat_contribution_limit: parseInt(eatLimit),
+          visit_contribution_limit: parseInt(visitLimit),
           owner_id: user?.id,
         })
         .select('id, share_token')
@@ -84,7 +89,7 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
         description: `Your trip to ${selectedCity.name} has been created.`,
       });
       
-      setStep(4);
+      setStep(5);
     } catch (error: any) {
       toast({
         title: "Error Creating Trip",
@@ -116,7 +121,7 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
     <div className="max-w-md mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Create New Trip - Step {step} of 4</CardTitle>
+          <CardTitle>Create New Trip - Step {step} of 5</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {step === 1 && (
@@ -213,6 +218,63 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
 
           {step === 3 && (
             <>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="eat-limit" className="flex items-center gap-2">
+                    <UtensilsCrossed className="h-4 w-4" />
+                    Best places to eat - Contribution Limit
+                  </Label>
+                  <Select value={eatLimit} onValueChange={setEatLimit}>
+                    <SelectTrigger id="eat-limit">
+                      <SelectValue placeholder="Select limit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 contributor</SelectItem>
+                      <SelectItem value="2">2 contributors</SelectItem>
+                      <SelectItem value="3">3 contributors</SelectItem>
+                      <SelectItem value="4">4 contributors</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Maximum number of friends who can contribute to this category
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="visit-limit" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Best places to visit - Contribution Limit
+                  </Label>
+                  <Select value={visitLimit} onValueChange={setVisitLimit}>
+                    <SelectTrigger id="visit-limit">
+                      <SelectValue placeholder="Select limit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 contributor</SelectItem>
+                      <SelectItem value="2">2 contributors</SelectItem>
+                      <SelectItem value="3">3 contributors</SelectItem>
+                      <SelectItem value="4">4 contributors</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Maximum number of friends who can contribute to this category
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                  Back
+                </Button>
+                <Button onClick={handleNextStep} className="flex-1">
+                  Next
+                </Button>
+              </div>
+            </>
+          )}
+
+          {step === 4 && (
+            <>
               <div className="space-y-2">
                 <Label>Invite Friends (Optional)</Label>
                 <Input
@@ -226,7 +288,7 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
               </div>
               
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
                   Back
                 </Button>
                 <Button 
@@ -240,7 +302,7 @@ export function CreateTripWizard({ onTripCreated }: CreateTripWizardProps) {
             </>
           )}
 
-          {step === 4 && createdTrip && (
+          {step === 5 && createdTrip && (
             <>
               <div className="text-center space-y-4">
                 <div className="space-y-2">
