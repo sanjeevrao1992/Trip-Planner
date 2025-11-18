@@ -18,15 +18,8 @@ serve(async (req) => {
     // List all environment variables for debugging
     console.log('🔍 Available env vars:', Object.keys(Deno.env.toObject()));
 
-    // Get the Google Maps API key from environment or fallback to hardcoded
-    let apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
-    
-    // Temporary fallback - use hardcoded key if env var is empty
-    if (!apiKey || apiKey.length === 0) {
-      console.log('🔄 Using fallback API key');
-      apiKey = 'AIzaSyC1nPyFTQn_45Q4DTtflbxw-adtNam77AI';
-    }
-    
+    // Get the Google Maps API key from environment
+    const apiKey = Deno.env.get('GOOGLE_MAPS_API_KEY')
     console.log('🗝️ API key found:', apiKey ? 'Yes' : 'No');
     console.log('🗝️ API key length:', apiKey?.length || 0);
 
