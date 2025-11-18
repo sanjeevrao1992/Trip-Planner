@@ -7,6 +7,7 @@ import { TripMenu } from '@/components/TripMenu';
 import { InviteFriendsDialog } from '@/components/InviteFriendsDialog';
 import { ShareLinkDialog } from '@/components/ShareLinkDialog';
 import { TripRecommendations } from '@/components/TripRecommendations';
+import { ContributionLimitDialog } from '@/components/ContributionLimitDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, LogOut } from 'lucide-react';
@@ -19,6 +20,7 @@ const Index = () => {
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   const [activeTrip, setActiveTrip] = useState<any>(null);
 
   // Load user's trips - ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
@@ -160,6 +162,10 @@ const Index = () => {
                           setActiveTrip(trip);
                           setShareDialogOpen(true);
                         }}
+                        onModifyLimits={() => {
+                          setActiveTrip(trip);
+                          setLimitDialogOpen(true);
+                        }}
                       />
                     </div>
                     {trip.start_date && (
@@ -192,7 +198,11 @@ const Index = () => {
                     <h3 className="text-lg font-semibold mb-4">
                       Friend Suggestions
                     </h3>
-                    <TripRecommendations tripId={selectedTrip.id} />
+                    <TripRecommendations 
+                      tripId={selectedTrip.id}
+                      eatLimit={selectedTrip.eat_contribution_limit}
+                      visitLimit={selectedTrip.visit_contribution_limit}
+                    />
                   </div>
                 </div>
               )}
@@ -215,6 +225,14 @@ const Index = () => {
             onOpenChange={setShareDialogOpen}
             shareToken={activeTrip.share_token}
             cityName={activeTrip.city_name}
+          />
+          <ContributionLimitDialog
+            open={limitDialogOpen}
+            onOpenChange={setLimitDialogOpen}
+            tripId={activeTrip.id}
+            currentEatLimit={activeTrip.eat_contribution_limit || 4}
+            currentVisitLimit={activeTrip.visit_contribution_limit || 4}
+            onUpdate={loadTrips}
           />
         </>
       )}

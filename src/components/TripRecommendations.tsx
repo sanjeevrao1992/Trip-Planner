@@ -13,9 +13,11 @@ interface Recommendation {
 
 interface TripRecommendationsProps {
   tripId: string;
+  eatLimit?: number;
+  visitLimit?: number;
 }
 
-export const TripRecommendations = ({ tripId }: TripRecommendationsProps) => {
+export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: TripRecommendationsProps) => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,9 +84,14 @@ export const TripRecommendations = ({ tripId }: TripRecommendationsProps) => {
     <div className="grid md:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UtensilsCrossed className="h-5 w-5" />
-            Best places to eat
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <UtensilsCrossed className="h-5 w-5" />
+              Best places to eat
+            </div>
+            <span className="text-sm text-muted-foreground font-normal">
+              Limit: {eatLimit} contributor{eatLimit !== 1 ? 's' : ''}
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -116,9 +123,14 @@ export const TripRecommendations = ({ tripId }: TripRecommendationsProps) => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Best places to visit
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Best places to visit
+            </div>
+            <span className="text-sm text-muted-foreground font-normal">
+              Limit: {visitLimit} contributor{visitLimit !== 1 ? 's' : ''}
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>
