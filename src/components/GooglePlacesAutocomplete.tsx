@@ -78,19 +78,34 @@ export function GooglePlacesAutocomplete({
           inputRef.current.style.display = 'none';
           container.insertBefore(autocompleteElement, inputRef.current);
 
-          // Listen for place selection
+          // Listen for place selection - using 'gmp-placeselect' event
           autocompleteElement.addEventListener('gmp-placeselect', async (event: any) => {
-            console.log('🎯 Place selected (new API):', event);
-            const place = event.place;
+            console.log('🎯 Place selected (new API), full event:', event);
+            console.log('🎯 Event.place:', event.place);
+            console.log('🎯 Event.detail:', event.detail);
+            
+            // The place can be in event.place or we need to get it from placePrediction
+            let place = event.place;
+            
+            // If place is not directly available, try to get it from the prediction
+            if (!place && event.detail?.placePrediction) {
+              console.log('📍 Getting place from placePrediction...');
+              place = event.detail.placePrediction.toPlace();
+            }
             
             if (place) {
               try {
+                console.log('📍 Fetching place fields...');
                 // Fetch the fields we need
                 await place.fetchFields({
                   fields: ['id', 'displayName', 'formattedAddress']
                 });
 
-                console.log('📍 Place details:', { id: place.id, displayName: place.displayName, formattedAddress: place.formattedAddress });
+                console.log('✅ Place details:', { 
+                  id: place.id, 
+                  displayName: place.displayName, 
+                  formattedAddress: place.formattedAddress 
+                });
 
                 onPlaceSelect({
                   place_id: place.id || '',
@@ -105,6 +120,8 @@ export function GooglePlacesAutocomplete({
               } catch (error) {
                 console.error('❌ Error fetching place fields:', error);
               }
+            } else {
+              console.error('❌ No place found in event');
             }
           });
 
