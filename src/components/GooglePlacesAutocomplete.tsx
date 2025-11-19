@@ -29,7 +29,6 @@ export function GooglePlacesAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const onPlaceSelectRef = useRef(onPlaceSelect);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const [inputValue, setInputValue] = useState(value || "");
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
 
@@ -63,10 +62,10 @@ export function GooglePlacesAutocomplete({
     initializeGoogleMaps();
   }, []);
 
-  // Initialize autocomplete when Google Maps is loaded
+  // Initialize autocomplete ONCE when Google Maps is loaded
   useEffect(() => {
-    if (isGoogleMapsLoaded && inputRef.current && window.google) {
-      console.log("🔧 Initializing Google Places Autocomplete");
+    if (isGoogleMapsLoaded && inputRef.current && window.google && !autocompleteRef.current) {
+      console.log("🔧 Initializing Google Places Autocomplete (ONE TIME)");
 
       const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
         types: types,
@@ -93,64 +92,60 @@ export function GooglePlacesAutocomplete({
             formatted_address: place.formatted_address || "",
           };
 
-          // Use setTimeout to ensure the selection completes before any dialog logic
-          setTimeout(() => {
-            console.log("⏰ Calling onPlaceSelect after timeout");
-            onPlaceSelectRef.current(placeResult);
-          }, 100);
+          // Call immediately - parent will handle clearing
+          onPlaceSelectRef.current(placeResult);
         } else {
           console.error("❌ No place_id in selected place");
         }
       });
 
       return () => {
-        console.log("🧹 Cleaning up autocomplete");
+        console.log("🧹 Cleaning up autocomplete on unmount");
         if (listener) {
           window.google.maps.event.removeListener(listener);
         }
-        window.google.maps.event.clearInstanceListeners(autocomplete);
+        if (autocompleteRef.current) {
+          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+          autocompleteRef.current = null;
+        }
       };
     }
   }, [isGoogleMapsLoaded, types]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    console.log("✏️ Input changed:", newValue);
-    setInputValue(newValue);
-    onChange?.(newValue);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    console.log("⌨️ Key pressed:", e.key);
-    // Only use fallback if Google Maps is not loaded
-    if (!isGoogleMapsLoaded && e.key === "Enter" && inputValue.trim()) {
-      console.log("⚠️ Using fallback mode (Enter pressed without Google Maps)");
-      const mockPlace: PlaceResult = {
-        place_id: "mock_" + Date.now(),
-        name: inputValue.trim(),
-        formatted_address: inputValue.trim(),
-      };
-      onPlaceSelect(mockPlace);
-    }
-  };
-
+  // Handle controlled value updates
   useEffect(() => {
-    if (value !== undefined && value !== inputValue) {
+    if (value !== undefined && inputRef.current) {
       console.log("🔄 Value prop changed, updating input:", value);
-      setInputValue(value);
-      // Also clear the Google autocomplete input if it exists
-      if (inputRef.current && value === "") {
+      if (value === "" && inputRef.current.value !== "") {
+        // Clear the input
         inputRef.current.value = "";
       }
     }
   }, [value]);
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    console.log("⌨️ Key pressed:", e.key);
+    // Only use fallback if Google Maps is not loaded
+    if (!isGoogleMapsLoaded && e.key === "Enter" && inputRef.current?.value.trim()) {
+      console.log("⚠️ Using fallback mode (Enter pressed without Google Maps)");
+      const mockPlace: PlaceResult = {
+        place_id: "mock_" + Date.now(),
+        name: inputRef.current.value.trim(),
+        formatted_address: inputRef.current.value.trim(),
+      };
+      onPlaceSelect(mockPlace);
+    }
+  };
+
   return (
     <div className="w-full">
       <Input
         ref={inputRef}
-        value={inputValue}
-        onChange={handleInputChange}
+        defaultValue={value}
+        onChange={(e) => {
+          console.log("✏️ Input changed:", e.target.value);
+          onChange?.(e.target.value);
+        }}
         onKeyPress={handleKeyPress}
         placeholder={placeholder}
         className={cn(className)}
