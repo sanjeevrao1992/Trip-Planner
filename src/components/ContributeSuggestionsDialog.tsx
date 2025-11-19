@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ export const ContributeSuggestionsDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
-  const handlePlaceSelect = (place: { place_id: string; name: string; formatted_address: string }) => {
+  const handlePlaceSelect = useCallback((place: { place_id: string; name: string; formatted_address: string }) => {
     console.log('🎯 ContributeSuggestionsDialog: handlePlaceSelect called', place);
     console.log('📊 Current places count:', places.length, 'Limit:', limit);
     
@@ -75,7 +75,7 @@ export const ContributeSuggestionsDialog = ({
     console.log('🔄 Clearing input field');
     // Clear the input field
     setInputValue('');
-  };
+  }, [places, limit]);
 
   const handleRemovePlace = (id: string) => {
     setPlaces(places.filter(p => p.id !== id));
