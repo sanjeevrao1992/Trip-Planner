@@ -33,6 +33,7 @@ const TripView = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"eat" | "visit">("eat");
   const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [userSubmissions, setUserSubmissions] = useState<any[]>([]);
 
   const sessionId = useAnonymousSession() || "";
 
@@ -88,6 +89,7 @@ const TripView = () => {
   useEffect(() => {
     if (trip && hasEnteredName) {
       fetchRecommendations();
+      fetchUserSubmissions();
     }
   }, [trip, hasEnteredName]);
 
@@ -101,6 +103,28 @@ const TripView = () => {
     
     if (data) {
       setRecommendations(data);
+    }
+  };
+
+  const fetchUserSubmissions = async () => {
+    if (!trip || !sessionId) return;
+    
+    const { data } = await supabase
+      .from("submissions")
+      .select(`
+        *,
+        recommendations:recommendation_id (
+          place_name,
+          place_address,
+          place_id
+        )
+      `)
+      .eq("trip_id", trip.id)
+      .eq("submitter_session_id", sessionId)
+      .eq("is_endorsement", false);
+    
+    if (data) {
+      setUserSubmissions(data);
     }
   };
 
@@ -150,6 +174,11 @@ const TripView = () => {
   const handleOpenDialog = (category: "eat" | "visit") => {
     setSelectedCategory(category);
     setDialogOpen(true);
+  };
+
+  const handleSubmitSuccess = () => {
+    fetchRecommendations();
+    fetchUserSubmissions();
   };
 
   if (!hasEnteredName) {
@@ -290,6 +319,63 @@ const TripView = () => {
               />
             </CardContent>
           </Card>
+
+          {/* User's Submitted Suggestions */}
+          {userSubmissions.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4">Your Suggestions</h2>
+              
+              {/* Places to Eat */}
+              {userSubmissions.filter(s => s.category === 'eat').length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
+                    <UtensilsCrossed className="h-5 w-5" />
+                    Places to Eat
+                  </h3>
+                  <div className="grid gap-3">
+                    {userSubmissions
+                      .filter(s => s.category === 'eat')
+                      .map((submission) => (
+                        <Card key={submission.id}>
+                          <CardContent className="p-4">
+                            <h4 className="font-medium">{submission.recommendations?.place_name}</h4>
+                            <p className="text-sm text-muted-foreground">{submission.recommendations?.place_address}</p>
+                            {submission.why_text && (
+                              <p className="text-sm mt-2 italic">"{submission.why_text}"</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Places to Visit */}
+              {userSubmissions.filter(s => s.category === 'visit').length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
+                    <Landmark className="h-5 w-5" />
+                    Places to Visit
+                  </h3>
+                  <div className="grid gap-3">
+                    {userSubmissions
+                      .filter(s => s.category === 'visit')
+                      .map((submission) => (
+                        <Card key={submission.id}>
+                          <CardContent className="p-4">
+                            <h4 className="font-medium">{submission.recommendations?.place_name}</h4>
+                            <p className="text-sm text-muted-foreground">{submission.recommendations?.place_address}</p>
+                            {submission.why_text && (
+                              <p className="text-sm mt-2 italic">"{submission.why_text}"</p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -302,7 +388,7 @@ const TripView = () => {
         cityName={trip.city_name}
         contributorName={contributorName}
         sessionId={sessionId}
-        onSubmitSuccess={fetchRecommendations}
+        onSubmitSuccess={handleSubmitSuccess}
       />
     </div>
   );
