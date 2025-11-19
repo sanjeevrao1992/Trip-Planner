@@ -47,6 +47,13 @@ export const ContributeSuggestionsDialog = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [inputValue, setInputValue] = useState('');
 
+  // Reset input when dialog opens
+  useEffect(() => {
+    if (open) {
+      setInputValue('');
+    }
+  }, [open]);
+
   const handlePlaceSelect = useCallback((place: { place_id: string; name: string; formatted_address: string }) => {
     console.log('🎯 ContributeSuggestionsDialog: handlePlaceSelect called', place);
     console.log('📊 Current places count:', places.length, 'Limit:', limit);
@@ -71,10 +78,6 @@ export const ContributeSuggestionsDialog = ({
       name: place.name,
       address: place.formatted_address,
     }]);
-    
-    console.log('🔄 Clearing input field');
-    // Clear the input field
-    setInputValue('');
   }, [places, limit]);
 
   const handleRemovePlace = (id: string) => {
@@ -163,6 +166,17 @@ export const ContributeSuggestionsDialog = ({
     }}>
       <DialogContent 
         className="sm:max-w-[500px]"
+        onPointerDownOutside={(e) => {
+          const target = e.target as HTMLElement;
+          // Allow interaction with Google Places dropdown
+          if (target.closest('.pac-container')) {
+            e.preventDefault();
+            return;
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          // Allow escape to work normally
+        }}
       >
         <DialogHeader>
           <DialogTitle>

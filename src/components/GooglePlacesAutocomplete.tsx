@@ -84,11 +84,19 @@ export function GooglePlacesAutocomplete({
             formatted_address: place.formatted_address || ''
           });
           
+          // Call the callback
           onPlaceSelectRef.current({
             place_id: place.place_id,
             name: place.name || place.formatted_address || '',
             formatted_address: place.formatted_address || ''
           });
+          
+          // Clear the input after selection
+          console.log('🧹 Clearing input after selection');
+          setInputValue('');
+          if (inputRef.current) {
+            inputRef.current.value = '';
+          }
         } else {
           console.error('❌ No place_id in selected place');
         }
@@ -120,8 +128,12 @@ export function GooglePlacesAutocomplete({
   };
 
   useEffect(() => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== inputValue) {
       setInputValue(value);
+      // Also clear the Google autocomplete input if it exists
+      if (inputRef.current && value === '') {
+        inputRef.current.value = '';
+      }
     }
   }, [value]);
 
