@@ -17,6 +17,7 @@ interface Place {
   place_id: string;
   name: string;
   address: string;
+  why_text?: string;
 }
 
 interface ContributeSuggestionsDialogProps {
@@ -82,6 +83,12 @@ export const ContributeSuggestionsDialog = ({
     setPlaces(places.filter(p => p.id !== id));
   };
 
+  const handleUpdateWhy = (id: string, whyText: string) => {
+    setPlaces(places.map(p => 
+      p.id === id ? { ...p, why_text: whyText } : p
+    ));
+  };
+
   const handleSubmit = async () => {
     if (places.length === 0) {
       toast.error("Please add at least one place");
@@ -133,6 +140,7 @@ export const ContributeSuggestionsDialog = ({
             submitter_name: contributorName,
             submitter_session_id: sessionId,
             is_endorsement: false,
+            why_text: place.why_text || null,
           });
 
         if (subError) throw subError;
@@ -178,26 +186,40 @@ export const ContributeSuggestionsDialog = ({
           </div>
 
           {places.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-sm font-medium">
                 Your suggestions ({places.length}/{limit}):
               </p>
               {places.map((place) => (
                 <div
                   key={place.id}
-                  className="flex items-start justify-between p-3 bg-muted rounded-lg"
+                  className="p-3 bg-muted rounded-lg space-y-2"
                 >
-                  <div className="flex-1">
-                    <p className="font-medium">{place.name}</p>
-                    <p className="text-sm text-muted-foreground">{place.address}</p>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium">{place.name}</p>
+                      <p className="text-sm text-muted-foreground">{place.address}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemovePlace(place.id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemovePlace(place.id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      Why do you recommend this place? (optional)
+                    </label>
+                    <textarea
+                      value={place.why_text || ""}
+                      onChange={(e) => handleUpdateWhy(place.id, e.target.value)}
+                      placeholder="Share your experience or reason for recommending..."
+                      className="w-full p-2 text-sm border rounded-md bg-background resize-none"
+                      rows={2}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
