@@ -78,6 +78,10 @@ export const ContributeSuggestionsDialog = ({
       name: place.name,
       address: place.formatted_address,
     }]);
+    
+    // Clear the input after adding
+    console.log('🧹 Clearing input after adding place');
+    setInputValue('');
   }, [places, limit]);
 
   const handleRemovePlace = (id: string) => {
