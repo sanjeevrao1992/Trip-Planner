@@ -163,14 +163,25 @@ export const ContributeSuggestionsDialog = ({
     }}>
       <DialogContent 
         className="sm:max-w-[500px]"
-        onInteractOutside={(e) => {
-          // Allow clicks on Google Places autocomplete dropdown (pac-container elements)
+        onPointerDownOutside={(e) => {
+          // Allow clicks on Google Places autocomplete dropdown
           const target = e.target as HTMLElement;
-          if (target.closest('.pac-container')) {
-            // Allow the autocomplete to work
-            return;
+          console.log('⬇️ Pointer down outside, target:', target.className, target.closest('.pac-container') ? 'IN PAC' : 'NOT IN PAC');
+          if (target.closest('.pac-container') || target.closest('.pac-item')) {
+            console.log('✅ Allowing Google Places click');
+            return; // Allow Google Places clicks
           }
-          // Prevent dialog from closing for other outside clicks
+          console.log('🚫 Preventing dialog close');
+          e.preventDefault();
+        }}
+        onInteractOutside={(e) => {
+          // Allow clicks on Google Places autocomplete dropdown
+          const target = e.target as HTMLElement;
+          console.log('🖱️ Interact outside, target:', target.className);
+          if (target.closest('.pac-container') || target.closest('.pac-item')) {
+            console.log('✅ Allowing Google Places interaction');
+            return; // Allow Google Places clicks
+          }
           e.preventDefault();
         }}
       >
