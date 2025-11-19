@@ -164,7 +164,13 @@ export const ContributeSuggestionsDialog = ({
       <DialogContent 
         className="sm:max-w-[500px]"
         onInteractOutside={(e) => {
-          // Prevent dialog from closing when clicking on Google Places dropdown
+          // Allow clicks on Google Places autocomplete dropdown (pac-container elements)
+          const target = e.target as HTMLElement;
+          if (target.closest('.pac-container')) {
+            // Allow the autocomplete to work
+            return;
+          }
+          // Prevent dialog from closing for other outside clicks
           e.preventDefault();
         }}
       >
