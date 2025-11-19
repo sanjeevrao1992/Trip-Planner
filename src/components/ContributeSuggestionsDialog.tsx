@@ -48,17 +48,23 @@ export const ContributeSuggestionsDialog = ({
   const [searchKey, setSearchKey] = useState(0);
 
   const handlePlaceSelect = (place: { place_id: string; name: string; formatted_address: string }) => {
+    console.log('🎯 ContributeSuggestionsDialog: handlePlaceSelect called', place);
+    console.log('📊 Current places count:', places.length, 'Limit:', limit);
+    
     if (places.length >= limit) {
+      console.log('❌ Limit reached');
       toast.error(`You can only suggest up to ${limit} place${limit > 1 ? 's' : ''}`);
       return;
     }
 
     // Check if place already added
     if (places.some(p => p.place_id === place.place_id)) {
+      console.log('❌ Place already added');
       toast.error("This place has already been added");
       return;
     }
 
+    console.log('✅ Adding place to list');
     setPlaces(prev => [...prev, {
       id: crypto.randomUUID(),
       place_id: place.place_id,
@@ -66,17 +72,9 @@ export const ContributeSuggestionsDialog = ({
       address: place.formatted_address,
     }]);
     
+    console.log('🔄 Resetting autocomplete with new key');
     // Reset the autocomplete input by changing the key
     setSearchKey(prev => prev + 1);
-    
-    // Prevent event propagation to keep dialog open
-    setTimeout(() => {
-      const input = document.querySelector('input[placeholder*="Search for places"]') as HTMLInputElement;
-      if (input) {
-        input.value = '';
-        input.focus();
-      }
-    }, 0);
   };
 
   const handleRemovePlace = (id: string) => {
@@ -159,8 +157,19 @@ export const ContributeSuggestionsDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      console.log('🚪 Dialog onOpenChange called:', newOpen);
+      onOpenChange(newOpen);
+    }}>
+      <DialogContent 
+        className="sm:max-w-[500px]"
+        onPointerDownOutside={(e) => {
+          console.log('🖱️ Pointer down outside dialog');
+        }}
+        onInteractOutside={(e) => {
+          console.log('🖱️ Interact outside dialog');
+        }}
+      >
         <DialogHeader>
           <DialogTitle>
             Best Places to {category === "eat" ? "Eat" : "Visit"}
