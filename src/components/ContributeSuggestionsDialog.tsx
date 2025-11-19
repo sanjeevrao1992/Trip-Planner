@@ -1,11 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { GooglePlacesAutocomplete } from "@/components/GooglePlacesAutocomplete";
 import { Plus, X } from "lucide-react";
@@ -45,53 +39,62 @@ export const ContributeSuggestionsDialog = ({
 }: ContributeSuggestionsDialogProps) => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
+  const isSelectingPlace = useRef(false);
 
   // Reset input when dialog opens
   useEffect(() => {
     if (open) {
-      setInputValue('');
+      setInputValue("");
+      isSelectingPlace.current = false;
     }
   }, [open]);
 
-  const handlePlaceSelect = useCallback((place: { place_id: string; name: string; formatted_address: string }) => {
-    console.log('🎯 ContributeSuggestionsDialog: handlePlaceSelect called', place);
-    console.log('📊 Current places count:', places.length, 'Limit:', limit);
-    
-    if (places.length >= limit) {
-      console.log('❌ Limit reached');
-      toast.error(`You can only suggest up to ${limit} place${limit > 1 ? 's' : ''}`);
-      return;
-    }
+  const handlePlaceSelect = useCallback(
+    (place: { place_id: string; name: string; formatted_address: string }) => {
+      console.log("🎯 ContributeSuggestionsDialog: handlePlaceSelect called", place);
+      console.log("📊 Current places count:", places.length, "Limit:", limit);
 
-    // Check if place already added
-    if (places.some(p => p.place_id === place.place_id)) {
-      console.log('❌ Place already added');
-      toast.error("This place has already been added");
-      return;
-    }
+      // Reset the flag
+      isSelectingPlace.current = false;
 
-    console.log('✅ Adding place to list');
-    setPlaces(prev => [...prev, {
-      id: crypto.randomUUID(),
-      place_id: place.place_id,
-      name: place.name,
-      address: place.formatted_address,
-    }]);
-    
-    // Clear the input after adding
-    console.log('🧹 Clearing input after adding place');
-    setInputValue('');
-  }, [places, limit]);
+      if (places.length >= limit) {
+        console.log("❌ Limit reached");
+        toast.error(`You can only suggest up to ${limit} place${limit > 1 ? "s" : ""}`);
+        return;
+      }
+
+      // Check if place already added
+      if (places.some((p) => p.place_id === place.place_id)) {
+        console.log("❌ Place already added");
+        toast.error("This place has already been added");
+        return;
+      }
+
+      console.log("✅ Adding place to list");
+      setPlaces((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          place_id: place.place_id,
+          name: place.name,
+          address: place.formatted_address,
+        },
+      ]);
+
+      // Clear the input after adding
+      console.log("🧹 Clearing input after adding place");
+      setInputValue("");
+    },
+    [places, limit],
+  );
 
   const handleRemovePlace = (id: string) => {
-    setPlaces(places.filter(p => p.id !== id));
+    setPlaces(places.filter((p) => p.id !== id));
   };
 
   const handleUpdateWhy = (id: string, whyText: string) => {
-    setPlaces(places.map(p => 
-      p.id === id ? { ...p, why_text: whyText } : p
-    ));
+    setPlaces(places.map((p) => (p.id === id ? { ...p, why_text: whyText } : p)));
   };
 
   const handleSubmit = async () => {
@@ -136,17 +139,15 @@ export const ContributeSuggestionsDialog = ({
         }
 
         // Create submission
-        const { error: subError } = await supabase
-          .from("submissions")
-          .insert({
-            trip_id: tripId,
-            recommendation_id: recommendationId,
-            category: category,
-            submitter_name: contributorName,
-            submitter_session_id: sessionId,
-            is_endorsement: false,
-            why_text: place.why_text || null,
-          });
+        const { error: subError } = await supabase.from("submissions").insert({
+          trip_id: tripId,
+          recommendation_id: recommendationId,
+          category: category,
+          submitter_name: contributorName,
+          submitter_session_id: sessionId,
+          is_endorsement: false,
+          why_text: place.why_text || null,
+        });
 
         if (subError) throw subError;
       }
@@ -164,30 +165,69 @@ export const ContributeSuggestionsDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      console.log('🚪 Dialog onOpenChange called:', newOpen);
-      onOpenChange(newOpen);
-    }}>
-      <DialogContent 
+    <Dialog
+      open={open}
+      onOpenChange={(newOpen) => {
+        console.log("🚪 Dialog onOpenChange called:", newOpen, "isSelectingPlace:", isSelectingPlace.current);
+        // Don't close if we're in the middle of selecting a place
+        if (!newOpen && isSelectingPlace.current) {
+          console.log("✋ Prevented close during place selection");
+          return;
+        }
+        onOpenChange(newOpen);
+      }}
+    >
+      <DialogContent
         className="sm:max-w-[500px]"
         onPointerDownOutside={(e) => {
           const target = e.target as HTMLElement;
-          // Allow interaction with Google Places dropdown
-          if (target.closest('.pac-container')) {
+          console.log("🖱️ Pointer down outside");
+          console.log("Target element:", target);
+          console.log("Target classes:", target.className);
+          console.log("Closest pac-container:", target.closest(".pac-container"));
+          console.log("Closest pac-item:", target.closest(".pac-item"));
+
+          // Check if the click is on the Google Places dropdown
+          const isPacContainer =
+            target.closest(".pac-container") ||
+            target.classList.contains("pac-container") ||
+            target.classList.contains("pac-item") ||
+            target.closest(".pac-item") ||
+            target.classList.contains("pac-item-query") ||
+            target.closest(".pac-item-query");
+
+          if (isPacContainer) {
+            console.log("✋ Preventing close - clicked on Google Places dropdown");
+            isSelectingPlace.current = true;
             e.preventDefault();
             return;
           }
         }}
-        onEscapeKeyDown={(e) => {
-          // Allow escape to work normally
+        onInteractOutside={(e) => {
+          const target = e.target as HTMLElement;
+          console.log("🖱️ Interact outside");
+
+          // Check if the interaction is with the Google Places dropdown
+          const isPacContainer =
+            target.closest(".pac-container") ||
+            target.classList.contains("pac-container") ||
+            target.classList.contains("pac-item") ||
+            target.closest(".pac-item") ||
+            target.classList.contains("pac-item-query") ||
+            target.closest(".pac-item-query");
+
+          if (isPacContainer) {
+            console.log("✋ Preventing close - interacted with Google Places dropdown");
+            isSelectingPlace.current = true;
+            e.preventDefault();
+            return;
+          }
         }}
       >
         <DialogHeader>
-          <DialogTitle>
-            Best Places to {category === "eat" ? "Eat" : "Visit"}
-          </DialogTitle>
+          <DialogTitle>Best Places to {category === "eat" ? "Eat" : "Visit"}</DialogTitle>
           <DialogDescription>
-            The trip creator has set a limit of {limit} place{limit > 1 ? 's' : ''} per contributor for this category.
+            The trip creator has set a limit of {limit} place{limit > 1 ? "s" : ""} per contributor for this category.
           </DialogDescription>
         </DialogHeader>
 
@@ -213,20 +253,13 @@ export const ContributeSuggestionsDialog = ({
                 Your suggestions ({places.length}/{limit}):
               </p>
               {places.map((place) => (
-                <div
-                  key={place.id}
-                  className="p-3 bg-muted rounded-lg space-y-2"
-                >
+                <div key={place.id} className="p-3 bg-muted rounded-lg space-y-2">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="font-medium">{place.name}</p>
                       <p className="text-sm text-muted-foreground">{place.address}</p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleRemovePlace(place.id)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleRemovePlace(place.id)}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -249,7 +282,7 @@ export const ContributeSuggestionsDialog = ({
 
           {places.length < limit && places.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              You can add {limit - places.length} more place{limit - places.length > 1 ? 's' : ''}
+              You can add {limit - places.length} more place{limit - places.length > 1 ? "s" : ""}
             </p>
           )}
 
@@ -257,10 +290,7 @@ export const ContributeSuggestionsDialog = ({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={places.length === 0 || isSubmitting}
-            >
+            <Button onClick={handleSubmit} disabled={places.length === 0 || isSubmitting}>
               {isSubmitting ? "Submitting..." : "Submit Suggestions"}
             </Button>
           </div>
