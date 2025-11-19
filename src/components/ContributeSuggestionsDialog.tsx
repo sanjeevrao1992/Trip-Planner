@@ -184,10 +184,23 @@ export const ContributeSuggestionsDialog = ({
           console.log("🖱️ Pointer down outside");
           console.log("Target element:", target);
           console.log("Target classes:", target.className);
-          console.log("Closest pac-container:", target.closest(".pac-container"));
-          console.log("Closest pac-item:", target.closest(".pac-item"));
 
-          // Check if the click is on the Google Places dropdown
+          // Check if there's a Google Places dropdown visible
+          const pacContainer = document.querySelector(".pac-container");
+          console.log("PAC container exists:", !!pacContainer);
+          console.log(
+            "PAC container visible:",
+            pacContainer ? window.getComputedStyle(pacContainer).display !== "none" : false,
+          );
+
+          // If Google Places dropdown is visible, prevent closing
+          if (pacContainer && window.getComputedStyle(pacContainer).display !== "none") {
+            console.log("✋ Preventing close - Google Places dropdown is visible");
+            e.preventDefault();
+            return;
+          }
+
+          // Also check if clicking on the dropdown itself
           const isPacContainer =
             target.closest(".pac-container") ||
             target.classList.contains("pac-container") ||
@@ -198,7 +211,6 @@ export const ContributeSuggestionsDialog = ({
 
           if (isPacContainer) {
             console.log("✋ Preventing close - clicked on Google Places dropdown");
-            isSelectingPlace.current = true;
             e.preventDefault();
             return;
           }
