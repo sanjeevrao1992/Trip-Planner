@@ -45,7 +45,7 @@ export const ContributeSuggestionsDialog = ({
 }: ContributeSuggestionsDialogProps) => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchKey, setSearchKey] = useState(0);
+  const [inputValue, setInputValue] = useState('');
 
   const handlePlaceSelect = (place: { place_id: string; name: string; formatted_address: string }) => {
     console.log('🎯 ContributeSuggestionsDialog: handlePlaceSelect called', place);
@@ -72,9 +72,9 @@ export const ContributeSuggestionsDialog = ({
       address: place.formatted_address,
     }]);
     
-    console.log('🔄 Resetting autocomplete with new key');
-    // Reset the autocomplete input by changing the key
-    setSearchKey(prev => prev + 1);
+    console.log('🔄 Clearing input field');
+    // Clear the input field
+    setInputValue('');
   };
 
   const handleRemovePlace = (id: string) => {
@@ -163,27 +163,6 @@ export const ContributeSuggestionsDialog = ({
     }}>
       <DialogContent 
         className="sm:max-w-[500px]"
-        onPointerDownOutside={(e) => {
-          // Allow clicks on Google Places autocomplete dropdown
-          const target = e.target as HTMLElement;
-          console.log('⬇️ Pointer down outside, target:', target.className, target.closest('.pac-container') ? 'IN PAC' : 'NOT IN PAC');
-          if (target.closest('.pac-container') || target.closest('.pac-item')) {
-            console.log('✅ Allowing Google Places click');
-            return; // Allow Google Places clicks
-          }
-          console.log('🚫 Preventing dialog close');
-          e.preventDefault();
-        }}
-        onInteractOutside={(e) => {
-          // Allow clicks on Google Places autocomplete dropdown
-          const target = e.target as HTMLElement;
-          console.log('🖱️ Interact outside, target:', target.className);
-          if (target.closest('.pac-container') || target.closest('.pac-item')) {
-            console.log('✅ Allowing Google Places interaction');
-            return; // Allow Google Places clicks
-          }
-          e.preventDefault();
-        }}
       >
         <DialogHeader>
           <DialogTitle>
@@ -198,9 +177,10 @@ export const ContributeSuggestionsDialog = ({
           <div>
             {places.length < limit ? (
               <GooglePlacesAutocomplete
-                key={searchKey}
                 onPlaceSelect={handlePlaceSelect}
                 placeholder={`Search for places in ${cityName}`}
+                value={inputValue}
+                onChange={setInputValue}
               />
             ) : (
               <p className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
