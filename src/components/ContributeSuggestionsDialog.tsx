@@ -163,11 +163,9 @@ export const ContributeSuggestionsDialog = ({
     }}>
       <DialogContent 
         className="sm:max-w-[500px]"
-        onPointerDownOutside={(e) => {
-          console.log('🖱️ Pointer down outside dialog');
-        }}
         onInteractOutside={(e) => {
-          console.log('🖱️ Interact outside dialog');
+          // Prevent dialog from closing when clicking on Google Places dropdown
+          e.preventDefault();
         }}
       >
         <DialogHeader>
