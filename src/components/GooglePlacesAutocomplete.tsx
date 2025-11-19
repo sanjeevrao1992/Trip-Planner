@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useEffect, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlaceResult {
   place_id: string;
@@ -22,13 +22,14 @@ export function GooglePlacesAutocomplete({
   onPlaceSelect,
   placeholder = "Search for a place...",
   className,
-  types = ['establishment'],
+  types = ["establishment"],
   value,
-  onChange
+  onChange,
 }: GooglePlacesAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const onPlaceSelectRef = useRef(onPlaceSelect);
-  const [inputValue, setInputValue] = useState(value || '');
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const [inputValue, setInputValue] = useState(value || "");
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
 
@@ -41,18 +42,21 @@ export function GooglePlacesAutocomplete({
   useEffect(() => {
     const initializeGoogleMaps = async () => {
       try {
-        const { data, error } = await supabase.functions.invoke('get-maps-api-key');
+        console.log("🗺️ Initializing Google Maps...");
+        const { data, error } = await supabase.functions.invoke("get-maps-api-key");
         if (error) throw error;
-        
+
         const { apiKey: key } = data;
+        console.log("🔑 API key received:", key ? "Yes" : "No");
         setApiKey(key);
-        
+
         if (key) {
           await loadGoogleMapsAPI(key);
+          console.log("✅ Google Maps loaded successfully");
           setIsGoogleMapsLoaded(true);
         }
       } catch (error) {
-        console.error('Failed to load Google Maps:', error);
+        console.error("❌ Failed to load Google Maps:", error);
       }
     };
 
@@ -62,41 +66,48 @@ export function GooglePlacesAutocomplete({
   // Initialize autocomplete when Google Maps is loaded
   useEffect(() => {
     if (isGoogleMapsLoaded && inputRef.current && window.google) {
-      console.log('🔧 Initializing Google Places Autocomplete (legacy API)');
-      
-      const autocomplete = new window.google.maps.places.Autocomplete(
-        inputRef.current,
-        { 
-          types: types,
-          fields: ['place_id', 'name', 'formatted_address']
-        }
-      );
+      console.log("🔧 Initializing Google Places Autocomplete");
 
-      autocomplete.addListener('place_changed', () => {
-        console.log('🎯 Place selection event fired');
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        types: types,
+        fields: ["place_id", "name", "formatted_address"],
+      });
+
+      autocompleteRef.current = autocomplete;
+
+      const listener = autocomplete.addListener("place_changed", () => {
+        console.log("🎯 Place selection event fired");
         const place = autocomplete.getPlace();
-        console.log('📍 Place details:', place);
-        
+        console.log("📍 Place details:", {
+          place_id: place.place_id,
+          name: place.name,
+          address: place.formatted_address,
+        });
+
         if (place.place_id) {
-          console.log('✅ Calling onPlaceSelect with:', {
+          console.log("✅ Valid place selected, calling onPlaceSelect");
+
+          const placeResult = {
             place_id: place.place_id,
-            name: place.name || place.formatted_address || '',
-            formatted_address: place.formatted_address || ''
-          });
-          
-          // Call the callback - parent will handle clearing
-          onPlaceSelectRef.current({
-            place_id: place.place_id,
-            name: place.name || place.formatted_address || '',
-            formatted_address: place.formatted_address || ''
-          });
+            name: place.name || place.formatted_address || "",
+            formatted_address: place.formatted_address || "",
+          };
+
+          // Use setTimeout to ensure the selection completes before any dialog logic
+          setTimeout(() => {
+            console.log("⏰ Calling onPlaceSelect after timeout");
+            onPlaceSelectRef.current(placeResult);
+          }, 100);
         } else {
-          console.error('❌ No place_id in selected place');
+          console.error("❌ No place_id in selected place");
         }
       });
 
       return () => {
-        console.log('🧹 Cleaning up autocomplete');
+        console.log("🧹 Cleaning up autocomplete");
+        if (listener) {
+          window.google.maps.event.removeListener(listener);
+        }
         window.google.maps.event.clearInstanceListeners(autocomplete);
       };
     }
@@ -104,17 +115,20 @@ export function GooglePlacesAutocomplete({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    console.log("✏️ Input changed:", newValue);
     setInputValue(newValue);
     onChange?.(newValue);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    console.log("⌨️ Key pressed:", e.key);
     // Only use fallback if Google Maps is not loaded
-    if (!isGoogleMapsLoaded && e.key === 'Enter' && inputValue.trim()) {
+    if (!isGoogleMapsLoaded && e.key === "Enter" && inputValue.trim()) {
+      console.log("⚠️ Using fallback mode (Enter pressed without Google Maps)");
       const mockPlace: PlaceResult = {
-        place_id: 'mock_' + Date.now(),
+        place_id: "mock_" + Date.now(),
         name: inputValue.trim(),
-        formatted_address: inputValue.trim()
+        formatted_address: inputValue.trim(),
       };
       onPlaceSelect(mockPlace);
     }
@@ -122,10 +136,11 @@ export function GooglePlacesAutocomplete({
 
   useEffect(() => {
     if (value !== undefined && value !== inputValue) {
+      console.log("🔄 Value prop changed, updating input:", value);
       setInputValue(value);
       // Also clear the Google autocomplete input if it exists
-      if (inputRef.current && value === '') {
-        inputRef.current.value = '';
+      if (inputRef.current && value === "") {
+        inputRef.current.value = "";
       }
     }
   }, [value]);
@@ -141,9 +156,7 @@ export function GooglePlacesAutocomplete({
         className={cn(className)}
       />
       {!isGoogleMapsLoaded && (
-        <p className="text-xs text-muted-foreground mt-1">
-          Loading Google Places... or press Enter for manual entry.
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">Loading Google Places... or press Enter for manual entry.</p>
       )}
     </div>
   );
@@ -152,31 +165,35 @@ export function GooglePlacesAutocomplete({
 // Helper function to load Google Maps API
 export function loadGoogleMapsAPI(apiKey: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (typeof window !== 'undefined' && window.google && window.google.maps) {
+    if (typeof window !== "undefined" && window.google && window.google.maps) {
+      console.log("✅ Google Maps already loaded");
       resolve();
       return;
     }
 
     // Create a unique callback name
     const callbackName = `googleMapsCallback_${Date.now()}`;
-    
+
+    console.log("📦 Loading Google Maps script...");
+
     // Set up the callback on window
     (window as any)[callbackName] = () => {
-      console.log('✅ Google Maps API callback fired');
+      console.log("✅ Google Maps API callback fired");
       delete (window as any)[callbackName];
       resolve();
     };
 
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=${callbackName}`;
     script.async = true;
     script.defer = true;
-    
+
     script.onerror = () => {
+      console.error("❌ Failed to load Google Maps script");
       delete (window as any)[callbackName];
-      reject(new Error('Failed to load Google Maps API'));
+      reject(new Error("Failed to load Google Maps API"));
     };
-    
+
     document.head.appendChild(script);
   });
 }
