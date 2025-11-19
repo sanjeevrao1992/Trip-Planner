@@ -27,9 +27,15 @@ export function GooglePlacesAutocomplete({
   onChange
 }: GooglePlacesAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const onPlaceSelectRef = useRef(onPlaceSelect);
   const [inputValue, setInputValue] = useState(value || '');
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+
+  // Keep the ref updated with the latest callback
+  useEffect(() => {
+    onPlaceSelectRef.current = onPlaceSelect;
+  }, [onPlaceSelect]);
 
   // Get API key and load Google Maps
   useEffect(() => {
@@ -78,7 +84,7 @@ export function GooglePlacesAutocomplete({
             formatted_address: place.formatted_address || ''
           });
           
-          onPlaceSelect({
+          onPlaceSelectRef.current({
             place_id: place.place_id,
             name: place.name || place.formatted_address || '',
             formatted_address: place.formatted_address || ''
@@ -93,7 +99,7 @@ export function GooglePlacesAutocomplete({
         window.google.maps.event.clearInstanceListeners(autocomplete);
       };
     }
-  }, [isGoogleMapsLoaded, types, onPlaceSelect]);
+  }, [isGoogleMapsLoaded, types]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
