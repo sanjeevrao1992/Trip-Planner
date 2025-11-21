@@ -15,13 +15,15 @@ interface GoogleMapsComponentProps {
   cityPlaceId?: string;
   className?: string;
   recommendations?: Recommendation[];
+  onMapReady?: (openMarker: (placeId: string) => void) => void;
 }
 
 export function GoogleMapsComponent({ 
   cityName, 
   cityPlaceId, 
   className = "w-full h-64",
-  recommendations = []
+  recommendations = [],
+  onMapReady
 }: GoogleMapsComponentProps) {
   console.log('🗺️ GoogleMapsComponent: Component rendered with props:', { cityName, cityPlaceId, className });
   
@@ -29,6 +31,8 @@ export function GoogleMapsComponent({
   const [error, setError] = useState<string | null>(null);
   const [mapContainer, setMapContainer] = useState<HTMLDivElement | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
+  const [markers, setMarkers] = useState<Map<string, any>>(new Map());
+  const [infoWindow, setInfoWindow] = useState<any>(null);
 
   console.log('🗺️ GoogleMapsComponent: Current state:', { isLoading, error, mapContainer: !!mapContainer });
 
@@ -139,11 +143,24 @@ export function GoogleMapsComponent({
           geocodeByName();
         }
 
-        function addRecommendationMarkers(map: any) {
+        async function addRecommendationMarkers(map: any) {
           if (!recommendations || recommendations.length === 0) return;
           
           const service = new window.google.maps.places.PlacesService(map as any);
-          const infoWindow = new window.google.maps.InfoWindow();
+          const newInfoWindow = new window.google.maps.InfoWindow();
+          setInfoWindow(newInfoWindow);
+          const newMarkers = new Map<string, any>();
+          
+          // Fetch submission reasons for all recommendations
+          const { data: submissions } = await supabase
+            .from('submissions')
+            .select('recommendation_id, why_text, submitter_name')
+            .in('recommendation_id', recommendations.map(r => r.id))
+            .eq('is_endorsement', false);
+          
+          const reasonsMap = new Map(
+            submissions?.map(s => [s.recommendation_id, { why: s.why_text, name: s.submitter_name }]) || []
+          );
           
           recommendations.forEach((rec) => {
             service.getDetails({
@@ -162,26 +179,62 @@ export function GoogleMapsComponent({
                   }
                 });
                 
-                marker.addListener('click', () => {
+                newMarkers.set(rec.place_id, { marker, place, rec });
+                
+                const openThisMarker = () => {
                   const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 200, maxHeight: 200 });
                   const googleMapsUrl = `https://www.google.com/maps/place/?q=place_id:${rec.place_id}`;
+                  const reason = reasonsMap.get(rec.id);
                   const content = `
-                    <div style="max-width: 250px;">
-                      ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+                    <div style="max-width: 280px;">
                       <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1a73e8;">
-                        <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
+                        <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
                       </a>
-                      <p style="margin: 0 0 4px 0; color: #666; font-size: 13px;">${place.formatted_address || rec.place_address || ''}</p>
-                      ${place.rating ? `<p style="margin: 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
-                      <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">${rec.category === 'eat' ? '🍽️ Place to Eat' : '🏛️ Place to Visit'}</p>
+                      ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+                      ${place.rating ? `<p style="margin: 0 0 8px 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
+                      ${reason?.why ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; font-style: italic; padding: 8px; background: #f5f5f5; border-radius: 4px;"><strong>${reason.name || 'Someone'}:</strong> "${reason.why}"</p>` : ''}
+                      <p style="margin: 0; color: #666; font-size: 12px;">${place.formatted_address || rec.place_address || ''}</p>
                     </div>
                   `;
-                  infoWindow.setContent(content);
-                  infoWindow.open(map as any, marker);
-                });
+                  newInfoWindow.setContent(content);
+                  newInfoWindow.open(map as any, marker);
+                  map.setCenter(place.geometry.location);
+                };
+                
+                marker.addListener('click', openThisMarker);
               }
             });
           });
+          
+          setMarkers(newMarkers);
+          
+          // Expose function to open marker by place ID
+          if (onMapReady) {
+            onMapReady((placeId: string) => {
+              const markerData = newMarkers.get(placeId);
+              if (markerData) {
+                const { marker, place, rec } = markerData;
+                map.setCenter(place.geometry.location);
+                
+                const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 200, maxHeight: 200 });
+                const googleMapsUrl = `https://www.google.com/maps/place/?q=place_id:${rec.place_id}`;
+                const reason = reasonsMap.get(rec.id);
+                const content = `
+                  <div style="max-width: 280px;">
+                    <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1a73e8;">
+                      <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
+                    </a>
+                    ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+                    ${place.rating ? `<p style="margin: 0 0 8px 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
+                    ${reason?.why ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; font-style: italic; padding: 8px; background: #f5f5f5; border-radius: 4px;"><strong>${reason.name || 'Someone'}:</strong> "${reason.why}"</p>` : ''}
+                    <p style="margin: 0; color: #666; font-size: 12px;">${place.formatted_address || rec.place_address || ''}</p>
+                  </div>
+                `;
+                newInfoWindow.setContent(content);
+                newInfoWindow.open(map as any, marker);
+              }
+            });
+          }
         }
 
         function geocodeByName() {
@@ -230,53 +283,112 @@ export function GoogleMapsComponent({
     initializeMap();
   }, [mapContainer, cityName, cityPlaceId]);
 
-  // Separate effect for handling recommendation markers
+  // Separate effect for handling recommendation markers when they change
   useEffect(() => {
-    if (!mapInstance || !window.google || recommendations.length === 0) return;
+    if (!mapInstance || !window.google) return;
+    
+    // Clear existing markers
+    markers.forEach(({ marker }) => marker.setMap(null));
+    setMarkers(new Map());
+    
+    if (recommendations.length === 0) return;
     
     console.log('🎯 Adding/updating recommendation markers:', recommendations.length);
     
-    const service = new window.google.maps.places.PlacesService(mapInstance);
-    const infoWindow = new window.google.maps.InfoWindow();
-    
-    recommendations.forEach((rec) => {
-      service.getDetails({
-        placeId: rec.place_id,
-        fields: ['geometry', 'name', 'formatted_address', 'rating', 'photos']
-      }, (place, status) => {
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
-          const marker = new window.google.maps.Marker({
-            position: place.geometry.location,
-            map: mapInstance,
-            title: rec.place_name,
-            icon: {
-              url: rec.category === 'eat' 
-                ? 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
-                : 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-            }
-          });
-          
-          marker.addListener('click', () => {
+    const addMarkers = async () => {
+      const service = new window.google.maps.places.PlacesService(mapInstance);
+      const newInfoWindow = new window.google.maps.InfoWindow();
+      setInfoWindow(newInfoWindow);
+      const newMarkers = new Map<string, any>();
+      
+      // Fetch submission reasons for all recommendations
+      const { data: submissions } = await supabase
+        .from('submissions')
+        .select('recommendation_id, why_text, submitter_name')
+        .in('recommendation_id', recommendations.map(r => r.id))
+        .eq('is_endorsement', false);
+      
+      const reasonsMap = new Map(
+        submissions?.map(s => [s.recommendation_id, { why: s.why_text, name: s.submitter_name }]) || []
+      );
+      
+      recommendations.forEach((rec) => {
+        service.getDetails({
+          placeId: rec.place_id,
+          fields: ['geometry', 'name', 'formatted_address', 'rating', 'photos']
+        }, (place, status) => {
+          if (status === window.google.maps.places.PlacesServiceStatus.OK && place?.geometry?.location) {
+            const marker = new window.google.maps.Marker({
+              position: place.geometry.location,
+              map: mapInstance,
+              title: rec.place_name,
+              icon: {
+                url: rec.category === 'eat' 
+                  ? 'http://maps.google.com/mapfiles/ms/icons/red-dot.png'
+                  : 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              }
+            });
+            
+            newMarkers.set(rec.place_id, { marker, place, rec });
+            
+            const openThisMarker = () => {
+              const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 200, maxHeight: 200 });
+              const googleMapsUrl = `https://www.google.com/maps/place/?q=place_id:${rec.place_id}`;
+              const reason = reasonsMap.get(rec.id);
+              const content = `
+                <div style="max-width: 280px;">
+                  <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1a73e8;">
+                    <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
+                  </a>
+                  ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+                  ${place.rating ? `<p style="margin: 0 0 8px 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
+                  ${reason?.why ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; font-style: italic; padding: 8px; background: #f5f5f5; border-radius: 4px;"><strong>${reason.name || 'Someone'}:</strong> "${reason.why}"</p>` : ''}
+                  <p style="margin: 0; color: #666; font-size: 12px;">${place.formatted_address || rec.place_address || ''}</p>
+                </div>
+              `;
+              newInfoWindow.setContent(content);
+              newInfoWindow.open(mapInstance, marker);
+              mapInstance.setCenter(place.geometry.location);
+            };
+            
+            marker.addListener('click', openThisMarker);
+          }
+        });
+      });
+      
+      setMarkers(newMarkers);
+      
+      // Expose function to open marker by place ID
+      if (onMapReady) {
+        onMapReady((placeId: string) => {
+          const markerData = newMarkers.get(placeId);
+          if (markerData) {
+            const { marker, place, rec } = markerData;
+            mapInstance.setCenter(place.geometry.location);
+            
             const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 200, maxHeight: 200 });
             const googleMapsUrl = `https://www.google.com/maps/place/?q=place_id:${rec.place_id}`;
+            const reason = reasonsMap.get(rec.id);
             const content = `
-              <div style="max-width: 250px;">
-                ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+              <div style="max-width: 280px;">
                 <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1a73e8;">
-                  <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
+                  <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
                 </a>
-                <p style="margin: 0 0 4px 0; color: #666; font-size: 13px;">${place.formatted_address || rec.place_address || ''}</p>
-                ${place.rating ? `<p style="margin: 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
-                <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">${rec.category === 'eat' ? '🍽️ Place to Eat' : '🏛️ Place to Visit'}</p>
+                ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+                ${place.rating ? `<p style="margin: 0 0 8px 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
+                ${reason?.why ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; font-style: italic; padding: 8px; background: #f5f5f5; border-radius: 4px;"><strong>${reason.name || 'Someone'}:</strong> "${reason.why}"</p>` : ''}
+                <p style="margin: 0; color: #666; font-size: 12px;">${place.formatted_address || rec.place_address || ''}</p>
               </div>
             `;
-            infoWindow.setContent(content);
-            infoWindow.open(mapInstance, marker);
-          });
-        }
-      });
-    });
-  }, [mapInstance, recommendations]);
+            newInfoWindow.setContent(content);
+            newInfoWindow.open(mapInstance, marker);
+          }
+        });
+      }
+    };
+    
+    addMarkers();
+  }, [mapInstance, recommendations, onMapReady]);
 
   // Always render the map container, but show loading/error overlays
   return (
