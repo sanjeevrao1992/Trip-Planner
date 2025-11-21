@@ -30,11 +30,11 @@ export function GooglePlacesAutocomplete({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const onPlaceSelectRef = useRef(onPlaceSelect);
-  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
+  const autocompleteServiceRef = useRef<any>(null);
+  const placesServiceRef = useRef<any>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
-  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [predictions, setPredictions] = useState<any[]>([]);
   const [isLoadingPredictions, setIsLoadingPredictions] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -75,9 +75,9 @@ export function GooglePlacesAutocomplete({
       console.log("🔧 Initializing Google Places Services");
       autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
       
-      // Create a hidden div for PlacesService
-      const hiddenDiv = document.createElement("div");
-      placesServiceRef.current = new window.google.maps.places.PlacesService(hiddenDiv);
+      // Create a temporary map for PlacesService (it requires a map or HTMLDivElement)
+      const tempDiv = document.createElement("div");
+      placesServiceRef.current = new window.google.maps.places.PlacesService(tempDiv as any);
     }
   }, [isGoogleMapsLoaded]);
 
@@ -120,7 +120,7 @@ export function GooglePlacesAutocomplete({
   }, [value]);
 
   // Handle prediction selection
-  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
+  const handleSelectPrediction = (prediction: any) => {
     if (!placesServiceRef.current) return;
 
     console.log("🎯 Fetching place details for:", prediction.place_id);
