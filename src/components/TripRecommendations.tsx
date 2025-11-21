@@ -47,7 +47,7 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
 
   const EmptyState = () => (
     <p className="text-muted-foreground text-sm italic">
-      There are no contributions yet. A good excuse to say hi 😉
+      There are no contributions from friends yet. A good excuse to say hi <span className="not-italic">😉</span>
     </p>
   );
 

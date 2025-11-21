@@ -122,13 +122,6 @@ export function GoogleMapsComponent({
               console.log('✅ Place found, setting center:', { lat: location.lat(), lng: location.lng() });
               map.setCenter(location);
               
-              // Add city marker
-              new window.google.maps.Marker({
-                position: location,
-                map: map,
-                title: cityName
-              });
-              
               // Add recommendation markers
               addRecommendationMarkers(map);
               
@@ -201,13 +194,6 @@ export function GoogleMapsComponent({
               const location = results[0].geometry.location;
               console.log('✅ Location found:', { lat: location.lat(), lng: location.lng() });
               map.setCenter(location);
-              
-              // Add city marker
-              new window.google.maps.Marker({
-                position: location,
-                map: map,
-                title: cityName
-              });
               
               // Add recommendation markers
               addRecommendationMarkers(map);
