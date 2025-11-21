@@ -11,8 +11,9 @@ declare global {
             input: HTMLInputElement,
             options?: google.maps.places.AutocompleteOptions
           ) => google.maps.places.Autocomplete;
+          AutocompleteService: new () => google.maps.places.AutocompleteService;
           PlaceAutocompleteElement: new (options?: google.maps.places.PlaceAutocompleteElementOptions) => google.maps.places.PlaceAutocompleteElement;
-          PlacesService: new (map: google.maps.Map) => google.maps.places.PlacesService;
+          PlacesService: new (map: google.maps.Map | HTMLDivElement) => google.maps.places.PlacesService;
           PlacesServiceStatus: {
             OK: 'OK';
             ZERO_RESULTS: 'ZERO_RESULTS';
@@ -100,6 +101,27 @@ declare namespace google {
       interface Autocomplete {
         addListener: (event: string, callback: () => void) => void;
         getPlace: () => PlaceResult;
+      }
+
+      interface AutocompleteService {
+        getPlacePredictions: (
+          request: AutocompletionRequest,
+          callback: (predictions: AutocompletePrediction[] | null, status: PlacesServiceStatus) => void
+        ) => void;
+      }
+
+      interface AutocompletionRequest {
+        input: string;
+        types?: string[];
+      }
+
+      interface AutocompletePrediction {
+        place_id: string;
+        description: string;
+        structured_formatting: {
+          main_text: string;
+          secondary_text: string;
+        };
       }
 
       interface PlacesService {
