@@ -177,65 +177,7 @@ export const ContributeSuggestionsDialog = ({
         onOpenChange(newOpen);
       }}
     >
-      <DialogContent
-        className="sm:max-w-[500px]"
-        onPointerDownOutside={(e) => {
-          const target = e.target as HTMLElement;
-          console.log("🖱️ Pointer down outside");
-          console.log("Target element:", target);
-          console.log("Target classes:", target.className);
-
-          // Check if there's a Google Places dropdown visible
-          const pacContainer = document.querySelector(".pac-container");
-          console.log("PAC container exists:", !!pacContainer);
-          console.log(
-            "PAC container visible:",
-            pacContainer ? window.getComputedStyle(pacContainer).display !== "none" : false,
-          );
-
-          // If Google Places dropdown is visible, prevent closing
-          if (pacContainer && window.getComputedStyle(pacContainer).display !== "none") {
-            console.log("✋ Preventing close - Google Places dropdown is visible");
-            e.preventDefault();
-            return;
-          }
-
-          // Also check if clicking on the dropdown itself
-          const isPacContainer =
-            target.closest(".pac-container") ||
-            target.classList.contains("pac-container") ||
-            target.classList.contains("pac-item") ||
-            target.closest(".pac-item") ||
-            target.classList.contains("pac-item-query") ||
-            target.closest(".pac-item-query");
-
-          if (isPacContainer) {
-            console.log("✋ Preventing close - clicked on Google Places dropdown");
-            e.preventDefault();
-            return;
-          }
-        }}
-        onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          console.log("🖱️ Interact outside");
-
-          // Check if the interaction is with the Google Places dropdown
-          const isPacContainer =
-            target.closest(".pac-container") ||
-            target.classList.contains("pac-container") ||
-            target.classList.contains("pac-item") ||
-            target.closest(".pac-item") ||
-            target.classList.contains("pac-item-query") ||
-            target.closest(".pac-item-query");
-
-          if (isPacContainer) {
-            console.log("✋ Preventing close - interacted with Google Places dropdown");
-            isSelectingPlace.current = true;
-            e.preventDefault();
-            return;
-          }
-        }}
-      >
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Best Places to {category === "eat" ? "Eat" : "Visit"}</DialogTitle>
           <DialogDescription>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 interface PlaceResult {
   place_id: string;
@@ -27,10 +28,16 @@ export function GooglePlacesAutocomplete({
   onChange,
 }: GooglePlacesAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const onPlaceSelectRef = useRef(onPlaceSelect);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+  const [isLoadingPredictions, setIsLoadingPredictions] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
 
   // Keep the ref updated with the latest callback
   useEffect(() => {
@@ -62,55 +69,44 @@ export function GooglePlacesAutocomplete({
     initializeGoogleMaps();
   }, []);
 
-  // Initialize autocomplete ONCE when Google Maps is loaded
+  // Initialize services when Google Maps is loaded
   useEffect(() => {
-    if (isGoogleMapsLoaded && inputRef.current && window.google && !autocompleteRef.current) {
-      console.log("🔧 Initializing Google Places Autocomplete (ONE TIME)");
-
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: types,
-        fields: ["place_id", "name", "formatted_address"],
-      });
-
-      autocompleteRef.current = autocomplete;
-
-      const listener = autocomplete.addListener("place_changed", () => {
-        console.log("🎯 Place selection event fired");
-        const place = autocomplete.getPlace();
-        console.log("📍 Place details:", {
-          place_id: place.place_id,
-          name: place.name,
-          address: place.formatted_address,
-        });
-
-        if (place.place_id) {
-          console.log("✅ Valid place selected, calling onPlaceSelect");
-
-          const placeResult = {
-            place_id: place.place_id,
-            name: place.name || place.formatted_address || "",
-            formatted_address: place.formatted_address || "",
-          };
-
-          // Call immediately - parent will handle clearing
-          onPlaceSelectRef.current(placeResult);
-        } else {
-          console.error("❌ No place_id in selected place");
-        }
-      });
-
-      return () => {
-        console.log("🧹 Cleaning up autocomplete on unmount");
-        if (listener) {
-          window.google.maps.event.removeListener(listener);
-        }
-        if (autocompleteRef.current) {
-          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-          autocompleteRef.current = null;
-        }
-      };
+    if (isGoogleMapsLoaded && window.google) {
+      console.log("🔧 Initializing Google Places Services");
+      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+      
+      // Create a hidden div for PlacesService
+      const hiddenDiv = document.createElement("div");
+      placesServiceRef.current = new window.google.maps.places.PlacesService(hiddenDiv);
     }
-  }, [isGoogleMapsLoaded, types]);
+  }, [isGoogleMapsLoaded]);
+
+  // Fetch predictions when input changes
+  useEffect(() => {
+    if (!isGoogleMapsLoaded || !autocompleteServiceRef.current || !value || value.trim() === "") {
+      setPredictions([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsLoadingPredictions(true);
+    const request = {
+      input: value,
+      types: types,
+    };
+
+    autocompleteServiceRef.current.getPlacePredictions(request, (results, status) => {
+      setIsLoadingPredictions(false);
+      if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+        setPredictions(results);
+        setShowDropdown(true);
+        setSelectedIndex(-1);
+      } else {
+        setPredictions([]);
+        setShowDropdown(false);
+      }
+    });
+  }, [value, isGoogleMapsLoaded, types]);
 
   // Handle controlled value updates
   useEffect(() => {
@@ -123,35 +119,113 @@ export function GooglePlacesAutocomplete({
     }
   }, [value]);
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    console.log("⌨️ Key pressed:", e.key);
-    // Only use fallback if Google Maps is not loaded
-    if (!isGoogleMapsLoaded && e.key === "Enter" && inputRef.current?.value.trim()) {
-      console.log("⚠️ Using fallback mode (Enter pressed without Google Maps)");
-      const mockPlace: PlaceResult = {
-        place_id: "mock_" + Date.now(),
-        name: inputRef.current.value.trim(),
-        formatted_address: inputRef.current.value.trim(),
-      };
-      onPlaceSelect(mockPlace);
+  // Handle prediction selection
+  const handleSelectPrediction = (prediction: google.maps.places.AutocompletePrediction) => {
+    if (!placesServiceRef.current) return;
+
+    console.log("🎯 Fetching place details for:", prediction.place_id);
+    
+    placesServiceRef.current.getDetails(
+      { placeId: prediction.place_id, fields: ["place_id", "name", "formatted_address"] },
+      (place, status) => {
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && place) {
+          console.log("✅ Place details received:", place);
+          const placeResult = {
+            place_id: place.place_id || prediction.place_id,
+            name: place.name || prediction.structured_formatting.main_text,
+            formatted_address: place.formatted_address || prediction.description,
+          };
+          onPlaceSelectRef.current(placeResult);
+          setShowDropdown(false);
+          setPredictions([]);
+        }
+      }
+    );
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showDropdown || predictions.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < predictions.length - 1 ? prev + 1 : prev));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === "Enter" && selectedIndex >= 0) {
+      e.preventDefault();
+      handleSelectPrediction(predictions[selectedIndex]);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
     }
   };
 
+  // Click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="w-full">
+    <div className="w-full relative">
       <Input
         ref={inputRef}
-        defaultValue={value}
+        value={value}
         onChange={(e) => {
           console.log("✏️ Input changed:", e.target.value);
           onChange?.(e.target.value);
         }}
-        onKeyPress={handleKeyPress}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className={cn(className)}
+        autoComplete="off"
       />
+      
       {!isGoogleMapsLoaded && (
-        <p className="text-xs text-muted-foreground mt-1">Loading Google Places... or press Enter for manual entry.</p>
+        <p className="text-xs text-muted-foreground mt-1">Loading Google Places...</p>
+      )}
+
+      {isLoadingPredictions && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {showDropdown && predictions.length > 0 && (
+        <div
+          ref={dropdownRef}
+          className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-[300px] overflow-y-auto"
+        >
+          {predictions.map((prediction, index) => (
+            <button
+              key={prediction.place_id}
+              type="button"
+              onClick={() => handleSelectPrediction(prediction)}
+              className={cn(
+                "w-full text-left px-4 py-3 hover:bg-accent transition-colors border-b border-border last:border-b-0",
+                selectedIndex === index && "bg-accent"
+              )}
+            >
+              <div className="font-medium text-sm text-foreground">
+                {prediction.structured_formatting.main_text}
+              </div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                {prediction.structured_formatting.secondary_text}
+              </div>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
