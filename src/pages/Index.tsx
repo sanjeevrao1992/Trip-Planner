@@ -22,13 +22,32 @@ const Index = () => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   const [activeTrip, setActiveTrip] = useState<any>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   // Load user's trips - ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   useEffect(() => {
     if (user) {
       loadTrips();
+      loadUserProfile();
     }
   }, [user]);
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+      setUserName(data?.name || null);
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
 
   // Redirect to auth if not authenticated - AFTER all hooks
   if (!loading && !user) {
@@ -106,7 +125,7 @@ const Index = () => {
           <h1 className="text-2xl font-bold">Trip Pals</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">
-              Welcome, {user?.email}
+              Welcome, {userName || user?.email}
             </span>
             <Button variant="outline" size="sm" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
