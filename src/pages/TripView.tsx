@@ -34,6 +34,7 @@ const TripView = () => {
   const [selectedCategory, setSelectedCategory] = useState<"eat" | "visit">("eat");
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [userSubmissions, setUserSubmissions] = useState<any[]>([]);
+  const [openMarkerFn, setOpenMarkerFn] = useState<((placeId: string) => void) | null>(null);
 
   const sessionId = useAnonymousSession() || "";
 
@@ -316,6 +317,7 @@ const TripView = () => {
                 cityPlaceId={trip.city_place_id}
                 recommendations={recommendations}
                 className="w-full h-96 rounded-b-lg"
+                onMapReady={(openMarker) => setOpenMarkerFn(() => openMarker)}
               />
             </CardContent>
           </Card>
@@ -336,7 +338,11 @@ const TripView = () => {
                     {userSubmissions
                       .filter(s => s.category === 'eat')
                       .map((submission) => (
-                        <Card key={submission.id}>
+                        <Card 
+                          key={submission.id}
+                          className="cursor-pointer hover:bg-accent/50 transition-colors"
+                          onClick={() => openMarkerFn?.(submission.recommendations?.place_id)}
+                        >
                           <CardContent className="p-4">
                             <h4 className="font-medium">{submission.recommendations?.place_name}</h4>
                             <p className="text-sm text-muted-foreground">{submission.recommendations?.place_address}</p>
@@ -361,7 +367,11 @@ const TripView = () => {
                     {userSubmissions
                       .filter(s => s.category === 'visit')
                       .map((submission) => (
-                        <Card key={submission.id}>
+                        <Card 
+                          key={submission.id}
+                          className="cursor-pointer hover:bg-accent/50 transition-colors"
+                          onClick={() => openMarkerFn?.(submission.recommendations?.place_id)}
+                        >
                           <CardContent className="p-4">
                             <h4 className="font-medium">{submission.recommendations?.place_name}</h4>
                             <p className="text-sm text-muted-foreground">{submission.recommendations?.place_address}</p>

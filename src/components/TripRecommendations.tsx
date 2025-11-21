@@ -5,6 +5,7 @@ import { UtensilsCrossed, MapPin, ThumbsUp } from 'lucide-react';
 
 interface Recommendation {
   id: string;
+  place_id: string;
   place_name: string;
   place_address: string | null;
   category: 'eat' | 'visit';
@@ -15,9 +16,10 @@ interface TripRecommendationsProps {
   tripId: string;
   eatLimit?: number;
   visitLimit?: number;
+  onRecommendationClick?: (placeId: string) => void;
 }
 
-export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: TripRecommendationsProps) => {
+export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4, onRecommendationClick }: TripRecommendationsProps) => {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,7 +104,11 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
           ) : (
             <div className="space-y-3">
               {eatRecommendations.map((rec) => (
-                <div key={rec.id} className="border-b pb-3 last:border-0 last:pb-0">
+                <div 
+                  key={rec.id} 
+                  className="border-b pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
+                  onClick={() => onRecommendationClick?.(rec.place_id)}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium">{rec.place_name}</h4>
@@ -144,7 +150,11 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
           ) : (
             <div className="space-y-3">
               {visitRecommendations.map((rec) => (
-                <div key={rec.id} className="border-b pb-3 last:border-0 last:pb-0">
+                <div 
+                  key={rec.id} 
+                  className="border-b pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-accent/50 p-2 rounded transition-colors"
+                  onClick={() => onRecommendationClick?.(rec.place_id)}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h4 className="font-medium">{rec.place_name}</h4>

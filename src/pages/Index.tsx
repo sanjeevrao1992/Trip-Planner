@@ -23,6 +23,7 @@ const Index = () => {
   const [limitDialogOpen, setLimitDialogOpen] = useState(false);
   const [activeTrip, setActiveTrip] = useState<any>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [openMarkerFn, setOpenMarkerFn] = useState<((placeId: string) => void) | null>(null);
 
   // Load user's trips - ALL HOOKS MUST BE CALLED BEFORE ANY EARLY RETURNS
   useEffect(() => {
@@ -210,6 +211,7 @@ const Index = () => {
                       cityName={selectedTrip.city_name}
                       cityPlaceId={selectedTrip.city_place_id}
                       className="w-full h-96 rounded-lg"
+                      onMapReady={(openMarker) => setOpenMarkerFn(() => openMarker)}
                     />
                   </div>
                   
@@ -221,6 +223,7 @@ const Index = () => {
                       tripId={selectedTrip.id}
                       eatLimit={selectedTrip.eat_contribution_limit}
                       visitLimit={selectedTrip.visit_contribution_limit}
+                      onRecommendationClick={(placeId) => openMarkerFn?.(placeId)}
                     />
                   </div>
                 </div>
