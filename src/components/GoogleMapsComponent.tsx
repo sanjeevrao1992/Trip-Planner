@@ -171,10 +171,13 @@ export function GoogleMapsComponent({
                 
                 marker.addListener('click', () => {
                   const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 200, maxHeight: 200 });
+                  const googleMapsUrl = `https://www.google.com/maps/place/?q=place_id:${rec.place_id}`;
                   const content = `
                     <div style="max-width: 250px;">
                       ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
-                      <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">${rec.place_name}</h3>
+                      <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1a73e8;">
+                        <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
+                      </a>
                       <p style="margin: 0 0 4px 0; color: #666; font-size: 13px;">${place.formatted_address || rec.place_address || ''}</p>
                       ${place.rating ? `<p style="margin: 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
                       <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">${rec.category === 'eat' ? '🍽️ Place to Eat' : '🏛️ Place to Visit'}</p>
@@ -269,10 +272,13 @@ export function GoogleMapsComponent({
           
           marker.addListener('click', () => {
             const photoUrl = place.photos?.[0]?.getUrl({ maxWidth: 200, maxHeight: 200 });
+            const googleMapsUrl = `https://www.google.com/maps/place/?q=place_id:${rec.place_id}`;
             const content = `
               <div style="max-width: 250px;">
                 ${photoUrl ? `<img src="${photoUrl}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
-                <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600;">${rec.place_name}</h3>
+                <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #1a73e8;">
+                  <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #1a73e8; cursor: pointer;">${rec.place_name}</h3>
+                </a>
                 <p style="margin: 0 0 4px 0; color: #666; font-size: 13px;">${place.formatted_address || rec.place_address || ''}</p>
                 ${place.rating ? `<p style="margin: 0; color: #888; font-size: 13px;">⭐ ${place.rating}</p>` : ''}
                 <p style="margin: 4px 0 0 0; font-size: 12px; color: #999;">${rec.category === 'eat' ? '🍽️ Place to Eat' : '🏛️ Place to Visit'}</p>

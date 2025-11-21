@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { UtensilsCrossed, MapPin } from 'lucide-react';
+import { UtensilsCrossed, MapPin, ThumbsUp } from 'lucide-react';
 
 interface Recommendation {
   id: string;
@@ -86,7 +86,9 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <UtensilsCrossed className="h-5 w-5" />
+              <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-white" />
+              </div>
               Best places to eat
             </div>
             <span className="text-sm text-muted-foreground font-normal">
@@ -102,16 +104,17 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
               {eatRecommendations.map((rec) => (
                 <div key={rec.id} className="border-b pb-3 last:border-0 last:pb-0">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-medium">{rec.place_name}</h4>
                       {rec.place_address && (
                         <p className="text-sm text-muted-foreground">{rec.place_address}</p>
                       )}
                     </div>
                     {rec.endorsement_count > 0 && (
-                      <span className="text-sm text-muted-foreground">
-                        {rec.endorsement_count} 👍
-                      </span>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground flex-shrink-0 ml-4">
+                        <ThumbsUp className="h-4 w-4" />
+                        <span>{rec.endorsement_count}</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -125,7 +128,9 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
+              <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+                <MapPin className="h-4 w-4 text-white" />
+              </div>
               Best places to visit
             </div>
             <span className="text-sm text-muted-foreground font-normal">
@@ -141,16 +146,17 @@ export const TripRecommendations = ({ tripId, eatLimit = 4, visitLimit = 4 }: Tr
               {visitRecommendations.map((rec) => (
                 <div key={rec.id} className="border-b pb-3 last:border-0 last:pb-0">
                   <div className="flex justify-between items-start">
-                    <div>
+                    <div className="flex-1">
                       <h4 className="font-medium">{rec.place_name}</h4>
                       {rec.place_address && (
                         <p className="text-sm text-muted-foreground">{rec.place_address}</p>
                       )}
                     </div>
                     {rec.endorsement_count > 0 && (
-                      <span className="text-sm text-muted-foreground">
-                        {rec.endorsement_count} 👍
-                      </span>
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground flex-shrink-0 ml-4">
+                        <ThumbsUp className="h-4 w-4" />
+                        <span>{rec.endorsement_count}</span>
+                      </div>
                     )}
                   </div>
                 </div>
