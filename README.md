@@ -1,73 +1,37 @@
-# Welcome to your Lovable project
+# Trip Planner
 
-## Project info
+> Plan trips together, not in separate chat threads.
 
-**URL**: https://lovable.dev/projects/88d1fa13-46ea-4d58-a443-465fed1dff75
+A collaborative trip planning app that brings your whole travel group onto the same map. Create a trip, invite friends, drop pins on places you want to visit, and get AI-powered recommendations for what to do and where to go.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- 🗺️ &nbsp;Google Maps integration — explore and pin places visually
+- 🔐 &nbsp;User auth with shareable invite links
+- 🤖 &nbsp;AI-powered place recommendations
+- 🔗 &nbsp;Shareable trip links
+- ☁️ &nbsp;Real-time sync via Supabase
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/88d1fa13-46ea-4d58-a443-465fed1dff75) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Tech stack
 
-**Use your preferred IDE**
+- React + TypeScript
+- Supabase (auth + database)
+- Google Maps API
+- Vite + Tailwind CSS
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Getting started
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+git clone https://github.com/sanjeevrao1992/Trip-Planner
+cd Trip-Planner
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/88d1fa13-46ea-4d58-a443-465fed1dff75) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+> Requires a Supabase project and Google Maps API key. Set the required environment variables before running.
