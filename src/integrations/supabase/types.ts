@@ -153,34 +153,40 @@ export type Database = {
           city_name: string
           city_place_id: string
           created_at: string
+          eat_contribution_limit: number
           end_date: string | null
           id: string
           owner_id: string
           share_token: string
           start_date: string | null
           updated_at: string
+          visit_contribution_limit: number
         }
         Insert: {
           city_name: string
           city_place_id: string
           created_at?: string
+          eat_contribution_limit?: number
           end_date?: string | null
           id?: string
           owner_id: string
           share_token?: string
           start_date?: string | null
           updated_at?: string
+          visit_contribution_limit?: number
         }
         Update: {
           city_name?: string
           city_place_id?: string
           created_at?: string
+          eat_contribution_limit?: number
           end_date?: string | null
           id?: string
           owner_id?: string
           share_token?: string
           start_date?: string | null
           updated_at?: string
+          visit_contribution_limit?: number
         }
         Relationships: []
       }
